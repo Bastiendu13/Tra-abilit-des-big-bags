@@ -9,6 +9,7 @@ import { getTraceabilityContext } from '@/lib/actions';
 import type { AISuggestTraceabilityContextOutput } from '@/ai/flows/ai-suggest-traceability-context-flow';
 import { useScanHistory } from '@/hooks/use-scan-history';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { CheckCircle, Lightbulb, List, Package, Save, Share2 } from 'lucide-react';
 
 interface ScanResultDialogProps {
