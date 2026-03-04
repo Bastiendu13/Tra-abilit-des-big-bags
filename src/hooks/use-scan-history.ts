@@ -1,11 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import type { Scan } from '@/lib/types';
 
 const HISTORY_KEY = 'tracefacile-scan-history';
 
-export function useScanHistory() {
+interface ScanHistoryContextType {
+  scans: Scan[];
+  addScan: (newScan: Omit<Scan, 'id' | 'timestamp'>) => void;
+  clearHistory: () => void;
+  isLoaded: boolean;
+}
+
+const ScanHistoryContext = createContext<ScanHistoryContextType | undefined>(undefined);
+
+export function ScanHistoryProvider({ children }: { children: ReactNode }) {
   const [scans, setScans] = useState<Scan[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -25,8 +34,7 @@ export function useScanHistory() {
   const updateLocalStorage = (updatedScans: Scan[]) => {
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedScans));
-    } catch (error) {
-      console.error("Failed to save scan history to localStorage", error);
+    } catch (error)      console.error("Failed to save scan history to localStorage", error);
     }
   };
 
@@ -49,5 +57,17 @@ export function useScanHistory() {
     updateLocalStorage([]);
   }, []);
 
-  return { scans, addScan, clearHistory, isLoaded };
+  return (
+    <ScanHistoryContext.Provider value={{ scans, addScan, clearHistory, isLoaded }}>
+      {children}
+    </ScanHistoryContext.Provider>
+  );
+}
+
+export function useScanHistory() {
+  const context = useContext(ScanHistoryContext);
+  if (context === undefined) {
+    throw new Error('useScanHistory must be used within a ScanHistoryProvider');
+  }
+  return context;
 }
