@@ -53,9 +53,9 @@ export default function HistoryPage() {
         'Code Produit': productQr,
         'Code Trémie': hopperQr,
         aiSummary: scan.aiContext?.summary.replace(/[\n,"]/g, ' ') || '',
-        aiCategories: scan.aiContext?.productCategories.join('; ') || '',
-        aiOrigin: scan.aiContext?.originInformation.join('; ') || '',
-        aiNextSteps: scan.aiContext?.nextSteps.join('; ') || '',
+        aiCategories: scan.aiContext?.productCategories?.join('; ') || '',
+        aiOrigin: scan.aiContext?.originInformation?.join('; ') || '',
+        aiNextSteps: scan.aiContext?.nextSteps?.join('; ') || '',
       };
     });
     exportToCsv(`tracefacile-historique-${new Date().toISOString()}.csv`, flattenedData);
@@ -133,7 +133,7 @@ export default function HistoryPage() {
               {scan.aiContext && (
                 <CardContent>
                   <Accordion type="single" collapsible>
-                    <AccordionItem value="item-1">
+                    <AccordionItem value={scan.id}>
                       <AccordionTrigger>Voir l'analyse IA</AccordionTrigger>
                       <AccordionContent className="space-y-4 pt-4">
                         <p className="text-sm">{scan.aiContext.summary}</p>
