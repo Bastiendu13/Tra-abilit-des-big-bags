@@ -33,15 +33,31 @@ export default function HistoryPage() {
       });
       return;
     }
-    const flattenedData = scans.map(scan => ({
-      id: scan.id,
-      timestamp: new Date(scan.timestamp).toISOString(),
-      qrData: scan.qrData,
-      aiSummary: scan.aiContext?.summary.replace(/[\n,"]/g, ' ') || '',
-      aiCategories: scan.aiContext?.productCategories.join('; ') || '',
-      aiOrigin: scan.aiContext?.originInformation.join('; ') || '',
-      aiNextSteps: scan.aiContext?.nextSteps.join('; ') || '',
-    }));
+    const flattenedData = scans.map(scan => {
+      let productQr = '';
+      let hopperQr = '';
+      // Regex to parse the combined QR data string
+      const match = scan.qrData.match(/Produit: (.*), Trémie: (.*)/);
+      if (match && match.length === 3) {
+        productQr = match[1];
+        hopperQr = match[2];
+      } else {
+        // Fallback for older data that is not in the new combined format
+        productQr = scan.qrData;
+        hopperQr = 'N/A';
+      }
+
+      return {
+        id: scan.id,
+        timestamp: new Date(scan.timestamp).toISOString(),
+        'Code Produit': productQr,
+        'Code Trémie': hopperQr,
+        aiSummary: scan.aiContext?.summary.replace(/[\n,"]/g, ' ') || '',
+        aiCategories: scan.aiContext?.productCategories.join('; ') || '',
+        aiOrigin: scan.aiContext?.originInformation.join('; ') || '',
+        aiNextSteps: scan.aiContext?.nextSteps.join('; ') || '',
+      };
+    });
     exportToCsv(`tracefacile-historique-${new Date().toISOString()}.csv`, flattenedData);
     toast({
       title: "Exportation réussie",
