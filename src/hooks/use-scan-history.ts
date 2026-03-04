@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode, createElement } from 'react';
 import type { Scan } from '@/lib/types';
 
 const HISTORY_KEY = 'tracefacile-scan-history';
@@ -58,10 +58,10 @@ export function ScanHistoryProvider({ children }: { children: ReactNode }) {
     updateLocalStorage([]);
   }, []);
 
-  return (
-    <ScanHistoryContext.Provider value={{ scans, addScan, clearHistory, isLoaded }}>
-      {children}
-    </ScanHistoryContext.Provider>
+  return createElement(
+    ScanHistoryContext.Provider,
+    { value: { scans, addScan, clearHistory, isLoaded } },
+    children
   );
 }
 
