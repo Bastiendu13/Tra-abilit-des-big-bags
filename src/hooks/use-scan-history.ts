@@ -34,7 +34,8 @@ export function ScanHistoryProvider({ children }: { children: ReactNode }) {
   const updateLocalStorage = (updatedScans: Scan[]) => {
     try {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedScans));
-    } catch (error)      console.error("Failed to save scan history to localStorage", error);
+    } catch (error) {
+      console.error("Failed to save scan history to localStorage", error);
     }
   };
 
