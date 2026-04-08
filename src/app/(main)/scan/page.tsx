@@ -21,23 +21,27 @@ export default function ScanPage() {
   useEffect(() => {
     if (productQr && hopperQr) {
       setIsDialogOpen(true);
-      setShowScanner(false);
     }
   }, [productQr, hopperQr]);
 
   const handleScanSuccess = (decodedText: string) => {
-    // Prevent scanning if dialog is open or being opened
+    // Prevent scanning if dialog is open or if we already have both scans
     if (isDialogOpen || (productQr && hopperQr)) return;
+
+    // Stop scanner immediately to prevent multiple callbacks and state transition errors
+    setShowScanner(false);
 
     if (scanStep === 'product') {
       setProductQr(decodedText);
       setScanStep('product_scanned');
-      setShowScanner(false);
     } else if (scanStep === 'hopper') {
       // Don't scan the same product QR as hopper QR
-      if (decodedText === productQr) return;
+      if (decodedText === productQr) {
+        // If the same QR is scanned again, re-enable scanner to try again.
+        setShowScanner(true);
+        return;
+      };
       setHopperQr(decodedText);
-      // The useEffect will handle opening the dialog and hiding the scanner
     }
   };
   
@@ -90,7 +94,7 @@ export default function ScanPage() {
       
       <QrScanner active={showScanner} onScanSuccess={handleScanSuccess} />
 
-      {scanStep === 'product_scanned' && productQr && (
+      {scanStep === 'product_scanned' && productQr && !hopperQr && (
         <div className="w-full space-y-6 animate-in fade-in duration-500">
             <Card>
                 <CardHeader>
