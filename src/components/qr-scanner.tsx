@@ -25,7 +25,8 @@ export function QrScanner({ onScanSuccess, onScanFailure, active }: QrScannerPro
 
   useEffect(() => {
     if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode(qrcodeRegionId);
+        // verbose=false to prevent library-level console logs
+        scannerRef.current = new Html5Qrcode(qrcodeRegionId, false);
     }
     const scanner = scannerRef.current;
     const config = { fps: 10, qrbox: { width: 250, height: 250 } };
@@ -36,53 +37,61 @@ export function QrScanner({ onScanSuccess, onScanFailure, active }: QrScannerPro
       const failureCallback = (err: string) => {
         if (onScanFailureRef.current) {
             onScanFailureRef.current(err)
-        } else {
-            console.log(err);
         }
+        // Non-fatal scanning errors can be ignored or logged here.
       };
 
       try {
-        await scanner.start(
-          { facingMode: "environment" },
-          config,
-          successCallback,
-          failureCallback
-        );
-        setError(null);
-      } catch (err: any) {
-        console.error("Camera start error:", err);
-        setError("Impossible de démarrer la caméra. Veuillez vérifier les autorisations de votre navigateur.");
-        try {
-          await scanner.start(
-            {},
-            config,
-            successCallback,
-            failureCallback
-          );
-          setError(null);
-        } catch (err2: any) {
-          console.error("Second camera attempt failed:", err2);
-          setError("Impossible de démarrer la caméra. Assurez-vous d'en avoir une et de donner les autorisations.");
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length > 0) {
+            let cameraId;
+            // Find back camera
+            const backCamera = cameras.find(c => c.label.toLowerCase().includes('back'));
+            if (backCamera) {
+                cameraId = backCamera.id;
+            } else {
+                // Fallback to the first camera if no back camera is found
+                cameraId = cameras[0].id;
+            }
+
+            await scanner.start(
+                cameraId,
+                config,
+                successCallback,
+                failureCallback
+            );
+            setError(null);
+        } else {
+            setError("Aucune caméra trouvée sur cet appareil.");
         }
+      } catch (err: any) {
+        console.error("Erreur de démarrage de la caméra:", err);
+        setError("Impossible d'accéder à la caméra. Veuillez vérifier les autorisations de votre navigateur.");
       }
     };
 
     const stopScanner = () => {
-      if (scanner && scanner.getState() === Html5QrcodeScannerState.SCANNING) {
+      // Check if scanner is in a stoppable state.
+      if (scanner && (scanner.getState() === Html5QrcodeScannerState.SCANNING || scanner.getState() === Html5QrcodeScannerState.PAUSED)) {
         scanner.stop().catch(err => {
+          // 'AbortError' is expected if the user navigates away or stops quickly.
           if (err.name !== 'AbortError') {
-            console.error("Failed to stop scanner", err);
+            console.error("Échec de l'arrêt du scanner", err);
           }
         });
       }
     }
 
     if (active) {
-      startScanner();
+      // Ensure we're not already trying to scan
+      if (scanner.getState() === Html5QrcodeScannerState.NOT_STARTED) {
+        startScanner();
+      }
     } else {
       stopScanner();
     }
 
+    // Cleanup on unmount or when `active` changes.
     return () => {
       stopScanner();
     };
