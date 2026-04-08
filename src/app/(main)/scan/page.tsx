@@ -88,7 +88,7 @@ export default function ScanPage() {
         </p>
       </div>
       
-      {showScanner && <QrScanner onScanSuccess={handleScanSuccess} />}
+      <QrScanner active={showScanner} onScanSuccess={handleScanSuccess} />
 
       {scanStep === 'product_scanned' && productQr && (
         <div className="w-full space-y-6 animate-in fade-in duration-500">
