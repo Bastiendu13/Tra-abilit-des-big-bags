@@ -25,10 +25,8 @@ export default function ScanPage() {
   }, [productQr, hopperQr]);
 
   const handleScanSuccess = (decodedText: string) => {
-    // Prevent scanning if dialog is open or if we already have both scans
-    if (isDialogOpen || (productQr && hopperQr)) return;
-
-    // Stop scanner immediately to prevent multiple callbacks and state transition errors
+    // This function is now guaranteed by the QrScanner to be called only once per scan session.
+    // Immediately stop rendering the scanner, which will unmount it and stop the camera.
     setShowScanner(false);
 
     if (scanStep === 'product') {
@@ -92,7 +90,8 @@ export default function ScanPage() {
         </p>
       </div>
       
-      <QrScanner active={showScanner} onScanSuccess={handleScanSuccess} />
+      {/* Conditionally render QrScanner to ensure it unmounts and stops correctly */}
+      {showScanner && <QrScanner onScanSuccess={handleScanSuccess} />}
 
       {scanStep === 'product_scanned' && productQr && !hopperQr && (
         <div className="w-full space-y-6 animate-in fade-in duration-500">
