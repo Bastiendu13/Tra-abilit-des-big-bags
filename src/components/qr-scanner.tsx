@@ -24,45 +24,43 @@ export function QrScanner({ onScanSuccess, onScanFailure, active }: QrScannerPro
   onScanFailureRef.current = onScanFailure;
 
   useEffect(() => {
+    // Lazy-init the scanner instance.
     if (!scannerRef.current) {
-        // verbose=false to prevent library-level console logs
-        scannerRef.current = new Html5Qrcode(qrcodeRegionId, false);
+      // verbose=false to prevent library-level console logs
+      scannerRef.current = new Html5Qrcode(qrcodeRegionId, false);
     }
     const scanner = scannerRef.current;
+
+    // If the scanner is not supposed to be active, we do nothing.
+    // The cleanup function from the previous render will handle stopping it.
+    if (!active) {
+      return;
+    }
+
     const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-    const startScanner = async () => {
-      // Wrap callbacks to use the latest from refs
-      const successCallback = (text: string, result: any) => onScanSuccessRef.current(text, result);
-      const failureCallback = (err: string) => {
-        if (onScanFailureRef.current) {
-            onScanFailureRef.current(err)
-        }
-        // Non-fatal scanning errors can be ignored or logged here.
-      };
+    const successCallback = (text: string, result: any) => onScanSuccessRef.current(text, result);
+    const failureCallback = (err: string) => {
+      if (onScanFailureRef.current) {
+        onScanFailureRef.current(err);
+      }
+      // Non-fatal scanning errors can be ignored or logged here.
+    };
 
+    const start = async () => {
       try {
         const cameras = await Html5Qrcode.getCameras();
         if (cameras && cameras.length > 0) {
-            let cameraId;
-            // Find back camera
-            const backCamera = cameras.find(c => c.label.toLowerCase().includes('back'));
-            if (backCamera) {
-                cameraId = backCamera.id;
-            } else {
-                // Fallback to the first camera if no back camera is found
-                cameraId = cameras[0].id;
-            }
-
-            await scanner.start(
-                cameraId,
-                config,
-                successCallback,
-                failureCallback
-            );
+          const backCamera = cameras.find(c => c.label.toLowerCase().includes('back'));
+          const cameraId = backCamera ? backCamera.id : cameras[0].id;
+          
+          // Check state before starting to prevent transition errors.
+          if (scanner.getState() === Html5QrcodeScannerState.NOT_STARTED) {
+            await scanner.start(cameraId, config, successCallback, failureCallback);
             setError(null);
+          }
         } else {
-            setError("Aucune caméra trouvée sur cet appareil.");
+          setError("Aucune caméra trouvée sur cet appareil.");
         }
       } catch (err: any) {
         console.error("Erreur de démarrage de la caméra:", err);
@@ -70,30 +68,19 @@ export function QrScanner({ onScanSuccess, onScanFailure, active }: QrScannerPro
       }
     };
 
-    const stopScanner = () => {
-      // Check if scanner is in a stoppable state.
-      if (scanner && (scanner.getState() === Html5QrcodeScannerState.SCANNING || scanner.getState() === Html5QrcodeScannerState.PAUSED)) {
+    start();
+
+    // The cleanup function is the canonical way to stop the scanner.
+    return () => {
+      // Check if the scanner is running before trying to stop it.
+      if (scanner && scanner.getState() === Html5QrcodeScannerState.SCANNING) {
         scanner.stop().catch(err => {
-          // 'AbortError' is expected if the user navigates away or stops quickly.
-          if (err.name !== 'AbortError') {
-            console.error("Échec de l'arrêt du scanner", err);
+          // This can happen if the scanner is already stopping or stopped. It's often safe to ignore.
+          if (err.name !== 'NotScanningError') {
+             console.warn("Échec de l'arrêt du scanner lors du nettoyage:", err);
           }
         });
       }
-    }
-
-    if (active) {
-      // Ensure we're not already trying to scan
-      if (scanner.getState() === Html5QrcodeScannerState.NOT_STARTED) {
-        startScanner();
-      }
-    } else {
-      stopScanner();
-    }
-
-    // Cleanup on unmount or when `active` changes.
-    return () => {
-      stopScanner();
     };
   }, [active]);
 
