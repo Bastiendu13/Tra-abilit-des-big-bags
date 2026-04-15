@@ -5,13 +5,21 @@ import { QrScanner } from '@/components/qr-scanner';
 import { ScanResultDialog } from '@/components/scan-result-dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { QrCode, ArrowRight, Settings } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { QrCode, ArrowRight, Settings, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useSessionConfig } from '@/hooks/use-session-config';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
 
 type ScanStep = 'product' | 'product_scanned' | 'hopper';
 
@@ -19,13 +27,13 @@ export default function ScanPage() {
   const { profile, isLoaded: profileLoaded } = useUserProfile();
   const { config, isLoaded: configLoaded } = useSessionConfig();
   const router = useRouter();
-  const { toast } = useToast();
   const [scanStep, setScanStep] = useState<ScanStep>('product');
   const [productQr, setProductQr] = useState<string | null>(null);
   const [hopperQr, setHopperQr] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showScanner, setShowScanner] = useState(true);
   const [scannerKey, setScannerKey] = useState(Date.now()); // Key to force re-mounting QrScanner
+  const [errorDialog, setErrorDialog] = useState<{ title: string; description: string } | null>(null);
 
   useEffect(() => {
     if (profileLoaded && !profile) {
@@ -59,8 +67,7 @@ export default function ScanPage() {
     } else if (scanStep === 'hopper') {
       // Don't scan the same product QR as hopper QR
       if (decodedText === productQr) {
-        toast({
-          variant: "destructive",
+        setErrorDialog({
           title: "Erreur de scan",
           description: "Le code QR de la trémie ne peut pas être le même que celui du produit.",
         });
@@ -71,8 +78,7 @@ export default function ScanPage() {
 
       // Check if the scanned hopper QR matches the session configuration
       if (decodedText !== config.tremie) {
-        toast({
-          variant: "destructive",
+        setErrorDialog({
           title: "Mauvaise trémie scannée",
           description: `Veuillez scanner la ${config.tremie}. Vous avez scanné une autre trémie.`,
         });
@@ -189,6 +195,25 @@ export default function ScanPage() {
           isOpen={isDialogOpen}
           onClose={handleDialogClose}
         />
+      )}
+
+      {errorDialog && (
+        <AlertDialog open={!!errorDialog} onOpenChange={() => setErrorDialog(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2 text-2xl">
+                    <XCircle className="h-8 w-8 text-destructive"/>
+                    {errorDialog.title}
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-lg text-center py-4 text-foreground">
+                  {errorDialog.description}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setErrorDialog(null)} className="w-full">Réessayer</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );
