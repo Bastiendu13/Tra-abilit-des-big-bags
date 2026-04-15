@@ -11,6 +11,7 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 import { useSessionConfig } from '@/hooks/use-session-config';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 type ScanStep = 'product' | 'product_scanned' | 'hopper';
 
@@ -18,6 +19,7 @@ export default function ScanPage() {
   const { profile, isLoaded: profileLoaded } = useUserProfile();
   const { config, isLoaded: configLoaded } = useSessionConfig();
   const router = useRouter();
+  const { toast } = useToast();
   const [scanStep, setScanStep] = useState<ScanStep>('product');
   const [productQr, setProductQr] = useState<string | null>(null);
   const [hopperQr, setHopperQr] = useState<string | null>(null);
@@ -59,10 +61,27 @@ export default function ScanPage() {
     } else if (scanStep === 'hopper') {
       // Don't scan the same product QR as hopper QR
       if (decodedText === productQr) {
+        toast({
+          variant: "destructive",
+          title: "Erreur de scan",
+          description: "Le code QR de la trémie ne peut pas être le même que celui du produit.",
+        });
         // If the same QR is scanned again, re-enable scanner to try again.
         setShowScanner(true);
         return;
       };
+
+      // Check if the scanned hopper QR matches the session configuration
+      if (decodedText !== config.tremie) {
+        toast({
+          variant: "destructive",
+          title: "Mauvaise trémie scannée",
+          description: `Veuillez scanner la ${config.tremie}. Vous avez scanné une autre trémie.`,
+        });
+        setShowScanner(true);
+        return;
+      }
+      
       setHopperQr(decodedText);
     }
   };
@@ -89,7 +108,7 @@ export default function ScanPage() {
       tremie: config.tremie
   } : null;
 
-  if (!profileLoaded || !configLoaded || !profile || !config.sml) {
+  if (!profileLoaded || !configLoaded || !profile || !config.sml || !config.tremie) {
     return (
         <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
             <div className="text-center w-full">
@@ -150,7 +169,7 @@ export default function ScanPage() {
                 <ArrowRight className="h-4 w-4" />
                 <AlertTitle>Action requise</AlertTitle>
                 <AlertDescription>
-                   Produit dois aller dans la trémie N°3.
+                   Le produit doit aller dans la {config.tremie}.
                 </AlertDescription>
             </Alert>
             
