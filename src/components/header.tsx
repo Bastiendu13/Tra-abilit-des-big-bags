@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { QrCode, History, Package } from 'lucide-react';
+import { QrCode, History, Package, User, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUserProfile } from '@/hooks/use-user-profile';
+import { Badge } from '@/components/ui/badge';
 
 const navItems = [
   { href: '/scan', label: 'Scanner', icon: QrCode },
@@ -12,6 +14,7 @@ const navItems = [
 
 export default function Header() {
   const pathname = usePathname();
+  const { profile } = useUserProfile();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -38,6 +41,14 @@ export default function Header() {
             );
           })}
         </nav>
+        <div className="ml-auto">
+            {profile && (
+                <Badge variant={profile === 'administrateur' ? 'default' : 'secondary'}>
+                    {profile === 'administrateur' ? <Shield className="mr-2 h-4 w-4" /> : <User className="mr-2 h-4 w-4" />}
+                    {profile.charAt(0).toUpperCase() + profile.slice(1)}
+                </Badge>
+            )}
+        </div>
       </div>
     </header>
   );

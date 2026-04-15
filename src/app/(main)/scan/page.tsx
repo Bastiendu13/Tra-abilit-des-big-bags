@@ -7,15 +7,26 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { QrCode, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useUserProfile } from '@/hooks/use-user-profile';
+import { useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ScanStep = 'product' | 'product_scanned' | 'hopper';
 
 export default function ScanPage() {
+  const { profile, isLoaded } = useUserProfile();
+  const router = useRouter();
   const [scanStep, setScanStep] = useState<ScanStep>('product');
   const [productQr, setProductQr] = useState<string | null>(null);
   const [hopperQr, setHopperQr] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showScanner, setShowScanner] = useState(true);
+
+  useEffect(() => {
+    if (isLoaded && !profile) {
+      router.push('/');
+    }
+  }, [isLoaded, profile, router]);
 
   // This effect will trigger the dialog once we have both QR codes.
   useEffect(() => {
@@ -80,6 +91,18 @@ export default function ScanPage() {
   };
   
   const scanResultForDialog = productQr && hopperQr ? `Produit: ${productQr}, Trémie: ${hopperQr}` : null;
+
+  if (!isLoaded || !profile) {
+    return (
+        <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
+            <div className="text-center w-full">
+                <Skeleton className="h-10 w-3/4 mx-auto" />
+                <Skeleton className="h-6 w-1/2 mx-auto mt-2" />
+            </div>
+            <Skeleton className="w-full max-w-lg aspect-square rounded-lg" />
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
