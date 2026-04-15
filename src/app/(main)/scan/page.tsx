@@ -81,7 +81,7 @@ export default function ScanPage() {
       if (!matching) {
         setErrorDialog({
           title: "Mauvaise trémie scannée",
-          description: `Veuillez scanner l'une des trémies actives : ${activeAssignments.map(a => a.tremie).join(', ')}. Vous avez scanné une trémie non configurée.`,
+          description: `Veuillez scanner l'une des trémies actives pour les sessions configurées : ${activeAssignments.map(a => `${a.sml} / ${a.tremie}`).join(' | ')}.`,
         });
         setScannerKey(Date.now());
         return;
@@ -132,7 +132,7 @@ export default function ScanPage() {
     );
   }
   
-  const activeHoppers = activeAssignments.map(a => a.tremie).join(', ');
+  const activeAssignmentsText = activeAssignments.map(a => `${a.sml} / ${a.tremie}`).join(' | ');
 
   const getTitle = () => {
     if (scanStep === 'product') {
@@ -146,12 +146,12 @@ export default function ScanPage() {
 
   const getDescription = () => {
     if (scanStep === 'product') {
-      return `Trémies actives : ${activeHoppers}. Positionnez le code QR de votre produit.`;
+      return `Sessions actives : ${activeAssignmentsText}. Positionnez le code QR du produit.`;
     }
     if (scanStep === 'product_scanned') {
       return `Le produit a bien été identifié.`;
     }
-    return `Scannez la trémie correspondante. Actives : ${activeHoppers}.`;
+    return `Scannez la trémie correspondante pour l'une des sessions actives : ${activeAssignmentsText}.`;
   };
   
 
@@ -183,7 +183,7 @@ export default function ScanPage() {
                 <ArrowRight className="h-4 w-4" />
                 <AlertTitle>Action requise</AlertTitle>
                 <AlertDescription>
-                   Ce produit doit aller dans l'une des trémies suivantes : {activeHoppers}.
+                   Ce produit doit aller dans une trémie d'une session active : {activeAssignmentsText}.
                 </AlertDescription>
             </Alert>
             
