@@ -62,6 +62,15 @@ export default function ScanPage() {
 
   const handleScanSuccess = (decodedText: string) => {
     if (scanStep === 'product') {
+      const isHopper = activeAssignments.some(a => a.tremie === decodedText);
+      if (isHopper) {
+        setErrorDialog({
+          title: "Erreur de séquence",
+          description: "Vous avez scanné une trémie. Veuillez d'abord scanner le code QR du produit.",
+        });
+        setScannerKey(Date.now());
+        return;
+      }
       setProductQr(decodedText);
       setScanStep('product_scanned');
       setShowScanner(false);
