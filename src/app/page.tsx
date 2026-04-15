@@ -14,7 +14,11 @@ export default function Home() {
 
   const handleProfileSelect = (profile: 'administrateur' | 'utilisateur') => {
     setProfile(profile);
-    router.push('/scan');
+    if (profile === 'administrateur') {
+      router.push('/config');
+    } else {
+      router.push('/scan');
+    }
   };
 
   return (
