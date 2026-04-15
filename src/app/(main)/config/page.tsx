@@ -18,7 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 const SML_OPTIONS = Array.from({ length: 8 }, (_, i) => `SML${i + 1}`);
 const TREMIE_OPTIONS = Array.from({ length: 6 }, (_, i) => `Trémie ${i + 1}`);
@@ -27,6 +28,7 @@ export default function ConfigPage() {
   const { profile, isLoaded: profileLoaded } = useUserProfile();
   const { config, setConfig, clearConfig, isLoaded: configLoaded } = useSessionConfig();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [selectedSml, setSelectedSml] = useState<string | null>(null);
   const [selectedTremie, setSelectedTremie] = useState<string | null>(null);
@@ -37,16 +39,6 @@ export default function ConfigPage() {
       router.push('/');
     }
   }, [profileLoaded, profile, router]);
-  
-  useEffect(() => {
-    // Pre-fill selection from context
-    if (configLoaded && config.sml) {
-        setSelectedSml(config.sml);
-    }
-    if (configLoaded && config.tremie) {
-        setSelectedTremie(config.tremie);
-    }
-  }, [configLoaded, config]);
 
   const handleSmlSelect = (sml: string) => {
     setSelectedSml(sml);
@@ -58,10 +50,15 @@ export default function ConfigPage() {
     setSelectedTremie(tremie);
   };
 
-  const handleSaveAndExit = () => {
+  const handleSaveConfig = () => {
     if (selectedSml && selectedTremie) {
         setConfig(selectedSml, selectedTremie);
-        router.push('/');
+        toast({
+          title: "Configuration sauvegardée",
+          description: `La session est maintenant configurée pour ${selectedSml} / ${selectedTremie}.`,
+        });
+        setSelectedSml(null);
+        setSelectedTremie(null);
     }
   };
   
@@ -69,6 +66,10 @@ export default function ConfigPage() {
     clearConfig();
     setSelectedSml(null);
     setSelectedTremie(null);
+    toast({
+      title: "Configuration réinitialisée",
+      description: "La session de scan n'est plus configurée.",
+    });
   }
 
   if (!profileLoaded || !configLoaded || !profile) {
@@ -97,7 +98,7 @@ export default function ConfigPage() {
             Configuration de la Session
           </h1>
           <p className="text-muted-foreground">
-            Veuillez paramétrer la session avant de commencer le scan.
+            Définissez ou mettez à jour la configuration active pour le scan.
           </p>
         </div>
         {config.sml && (
@@ -124,13 +125,31 @@ export default function ConfigPage() {
         )}
       </div>
 
+      <Card className="bg-secondary/50">
+        <CardHeader>
+          <CardTitle className="text-xl">Configuration Actuelle</CardTitle>
+          <CardDescription>
+            Cette configuration est active pour tous les utilisateurs.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {config.sml && config.tremie ? (
+            <p className="text-lg font-semibold text-primary">
+                {config.sml} <ChevronRight className="inline-block h-5 w-5 mx-1" /> {config.tremie}
+            </p>
+          ) : (
+            <p className="text-muted-foreground">Aucune configuration de session active.</p>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             Étape 1: Sélectionner le SML
             {selectedSml && <CheckCircle className="h-6 w-6 text-green-500" />}
           </CardTitle>
-          <CardDescription>Choisissez un SML pour continuer.</CardDescription>
+          <CardDescription>Choisissez un SML pour définir une nouvelle configuration.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -182,15 +201,15 @@ export default function ConfigPage() {
           <div className="flex flex-col items-center gap-8 text-center animate-in fade-in duration-500">
              <Card className="bg-secondary border-primary/20 w-full">
                 <CardContent className="p-6">
-                    <p className="text-lg font-medium text-secondary-foreground">Configuration de la session :</p>
+                    <p className="text-lg font-medium text-secondary-foreground">Nouvelle configuration :</p>
                     <p className="text-2xl font-bold text-primary flex items-center justify-center">
                         {selectedSml} <ChevronRight className="inline-block h-6 w-6 mx-2" /> {selectedTremie}
                     </p>
                 </CardContent>
              </Card>
-             <Button onClick={handleSaveAndExit} size="lg" className="shadow-lg w-full max-w-xs">
+             <Button onClick={handleSaveConfig} size="lg" className="shadow-lg w-full max-w-xs">
                 <Save className="mr-2 h-5 w-5" />
-                Sauvegarder et quitter
+                Sauvegarder la configuration
             </Button>
           </div>
       )}
