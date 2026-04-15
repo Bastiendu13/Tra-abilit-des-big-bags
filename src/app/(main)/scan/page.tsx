@@ -25,6 +25,7 @@ export default function ScanPage() {
   const [hopperQr, setHopperQr] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showScanner, setShowScanner] = useState(true);
+  const [scannerKey, setScannerKey] = useState(Date.now()); // Key to force re-mounting QrScanner
 
   useEffect(() => {
     if (profileLoaded && !profile) {
@@ -51,11 +52,8 @@ export default function ScanPage() {
   }, [productQr, hopperQr]);
 
   const handleScanSuccess = (decodedText: string) => {
-    // This function is now guaranteed by the QrScanner to be called only once per scan session.
-    // Immediately stop rendering the scanner, which will unmount it and stop the camera.
-    setShowScanner(false);
-
     if (scanStep === 'product') {
+      setShowScanner(false);
       setProductQr(decodedText);
       setScanStep('product_scanned');
     } else if (scanStep === 'hopper') {
@@ -66,8 +64,8 @@ export default function ScanPage() {
           title: "Erreur de scan",
           description: "Le code QR de la trémie ne peut pas être le même que celui du produit.",
         });
-        // If the same QR is scanned again, re-enable scanner to try again.
-        setShowScanner(true);
+        // Reset scanner by changing key to allow a new scan
+        setScannerKey(Date.now());
         return;
       };
 
@@ -78,16 +76,20 @@ export default function ScanPage() {
           title: "Mauvaise trémie scannée",
           description: `Veuillez scanner la ${config.tremie}. Vous avez scanné une autre trémie.`,
         });
-        setShowScanner(true);
+        // Reset scanner by changing key to allow a new scan
+        setScannerKey(Date.now());
         return;
       }
       
+      // On success for hopper, hide scanner and set QR
+      setShowScanner(false);
       setHopperQr(decodedText);
     }
   };
   
   const handleStartHopperScan = () => {
     setScanStep('hopper');
+    setScannerKey(Date.now()); // Give scanner a new key to ensure it's fresh
     setShowScanner(true);
   }
 
@@ -99,6 +101,7 @@ export default function ScanPage() {
       setHopperQr(null);
       setScanStep('product');
       setShowScanner(true);
+      setScannerKey(Date.now());
     }, 300); 
   };
   
@@ -152,7 +155,7 @@ export default function ScanPage() {
       </div>
       
       {/* Conditionally render QrScanner to ensure it unmounts and stops correctly */}
-      {showScanner && <QrScanner onScanSuccess={handleScanSuccess} />}
+      {showScanner && <QrScanner key={scannerKey} onScanSuccess={handleScanSuccess} />}
 
       {scanStep === 'product_scanned' && productQr && !hopperQr && (
         <div className="w-full space-y-6 animate-in fade-in duration-500">
