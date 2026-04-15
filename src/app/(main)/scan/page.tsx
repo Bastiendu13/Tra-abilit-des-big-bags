@@ -81,7 +81,7 @@ export default function ScanPage() {
       if (!matching) {
         setErrorDialog({
           title: "Mauvaise trémie scannée",
-          description: `Veuillez scanner l'une des trémies actives pour les sessions configurées : ${activeAssignments.map(a => `${a.sml} / ${a.tremie}`).join(' | ')}.`,
+          description: `La trémie scannée ("${decodedText}") n'est pas valide pour les sessions actives. Veuillez scanner l'une des trémies configurées : ${activeAssignments.map(a => `${a.sml} / ${a.tremie}`).join(' | ')}.`,
         });
         setScannerKey(Date.now());
         return;
