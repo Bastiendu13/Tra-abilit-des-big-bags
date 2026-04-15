@@ -16,7 +16,7 @@ const TREMIE_OPTIONS = Array.from({ length: 6 }, (_, i) => `Trémie ${i + 1}`);
 
 export default function ConfigPage() {
   const { profile, isLoaded: profileLoaded } = useUserProfile();
-  const { assignments, activeAssignment, addAssignment, removeAssignment, setActiveAssignmentId, isLoaded: configLoaded } = useSessionConfig();
+  const { assignments, activeAssignments, addAssignment, removeAssignment, activateAssignment, deactivateAssignment, isLoaded: configLoaded } = useSessionConfig();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -42,7 +42,7 @@ export default function ConfigPage() {
   };
 
   const handleActivate = (assignmentId: string) => {
-    setActiveAssignmentId(assignmentId);
+    activateAssignment(assignmentId);
     const assignment = assignments.find(a => a.id === assignmentId);
     toast({
         title: "Session activée",
@@ -50,11 +50,12 @@ export default function ConfigPage() {
     });
   };
 
-  const handleDeactivate = () => {
-    setActiveAssignmentId(null);
+  const handleDeactivate = (assignmentId: string) => {
+    deactivateAssignment(assignmentId);
+    const assignment = assignments.find(a => a.id === assignmentId);
     toast({
         title: "Session désactivée",
-        description: `Aucune session de scan n'est active.`,
+        description: `La session pour ${assignment?.sml} / ${assignment?.tremie} est inactive.`,
     });
   };
 
@@ -92,7 +93,7 @@ export default function ConfigPage() {
                 Gestion des Affectations
               </h1>
               <p className="text-muted-foreground">
-                Créez des affectations SML/Trémie et activez-en une pour la session de scan.
+                Créez des affectations SML/Trémie et activez-les pour la session de scan.
               </p>
             </div>
         </div>
@@ -150,8 +151,8 @@ export default function ConfigPage() {
             <CardHeader>
                 <CardTitle>Liste des Affectations</CardTitle>
                 <CardDescription>
-                    {activeAssignment 
-                        ? <>Session active : <strong className="text-primary">{activeAssignment.sml} / {activeAssignment.tremie}</strong></> 
+                     {activeAssignments.length > 0 
+                        ? <>{activeAssignments.length} session{activeAssignments.length > 1 ? 's' : ''} active{activeAssignments.length > 1 ? 's' : ''} : <strong className="text-primary">{activeAssignments.map(a => `${a.sml} / ${a.tremie}`).join(', ')}</strong></> 
                         : "Aucune session n'est active. Les utilisateurs ne peuvent pas scanner."
                     }
                 </CardDescription>
@@ -160,7 +161,7 @@ export default function ConfigPage() {
                 {assignments.length > 0 ? (
                     <div className="space-y-3">
                         {assignments.map(assignment => {
-                            const isActive = activeAssignment?.id === assignment.id;
+                            const isActive = activeAssignments.some(a => a.id === assignment.id);
                             return (
                                 <Card key={assignment.id} className={cn("flex items-center justify-between p-4", isActive && "bg-primary/10 border-primary")}>
                                     <p className="font-semibold text-lg">
@@ -168,7 +169,7 @@ export default function ConfigPage() {
                                     </p>
                                     <div className="flex items-center gap-2">
                                         {isActive ? (
-                                            <Button variant="outline" size="sm" onClick={handleDeactivate}>
+                                            <Button variant="outline" size="sm" onClick={() => handleDeactivate(assignment.id)}>
                                                 <PowerOff className="mr-2 h-4 w-4" />
                                                 Désactiver
                                             </Button>

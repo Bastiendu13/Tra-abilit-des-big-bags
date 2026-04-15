@@ -8,14 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default function WaitForConfigPage() {
     const router = useRouter();
-    const { activeAssignment, isLoaded } = useSessionConfig();
+    const { activeAssignments, isLoaded } = useSessionConfig();
 
     useEffect(() => {
         // If config is set, redirect to scan page
-        if (isLoaded && activeAssignment) {
+        if (isLoaded && activeAssignments.length > 0) {
             router.replace('/scan');
         }
-    }, [activeAssignment, isLoaded, router]);
+    }, [activeAssignments, isLoaded, router]);
 
     return (
         <div className="flex items-center justify-center h-full">

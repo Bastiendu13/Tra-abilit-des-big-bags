@@ -17,7 +17,7 @@ import {
 import { QrCode, ArrowRight, Settings, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUserProfile } from '@/hooks/use-user-profile';
-import { useSessionConfig } from '@/hooks/use-session-config';
+import { useSessionConfig, type Assignment } from '@/hooks/use-session-config';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -25,11 +25,12 @@ type ScanStep = 'product' | 'product_scanned' | 'hopper';
 
 export default function ScanPage() {
   const { profile, isLoaded: profileLoaded } = useUserProfile();
-  const { activeAssignment, isLoaded: configLoaded } = useSessionConfig();
+  const { activeAssignments, isLoaded: configLoaded } = useSessionConfig();
   const router = useRouter();
   const [scanStep, setScanStep] = useState<ScanStep>('product');
   const [productQr, setProductQr] = useState<string | null>(null);
   const [hopperQr, setHopperQr] = useState<string | null>(null);
+  const [matchingAssignment, setMatchingAssignment] = useState<Assignment | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showScanner, setShowScanner] = useState(true);
   const [scannerKey, setScannerKey] = useState(Date.now()); // Key to force re-mounting QrScanner
@@ -42,7 +43,7 @@ export default function ScanPage() {
 
     // Protection logic
     if (configLoaded) {
-      if (!activeAssignment) {
+      if (activeAssignments.length === 0) {
         if (profile === 'administrateur') {
           router.replace('/config');
         } else if (profile === 'utilisateur') {
@@ -50,14 +51,14 @@ export default function ScanPage() {
         }
       }
     }
-  }, [profileLoaded, configLoaded, profile, activeAssignment, router]);
+  }, [profileLoaded, configLoaded, profile, activeAssignments, router]);
 
   // This effect will trigger the dialog once we have both QR codes.
   useEffect(() => {
-    if (productQr && hopperQr) {
+    if (productQr && hopperQr && matchingAssignment) {
       setIsDialogOpen(true);
     }
-  }, [productQr, hopperQr]);
+  }, [productQr, hopperQr, matchingAssignment]);
 
   const handleScanSuccess = (decodedText: string) => {
     if (scanStep === 'product') {
@@ -76,13 +77,12 @@ export default function ScanPage() {
         return;
       };
 
-      // Check if the scanned hopper QR matches the session configuration
-      if (decodedText !== activeAssignment?.tremie) {
+      const matching = activeAssignments.find(a => a.tremie === decodedText);
+      if (!matching) {
         setErrorDialog({
           title: "Mauvaise trémie scannée",
-          description: `Veuillez scanner la ${activeAssignment?.tremie}. Vous avez scanné une autre trémie.`,
+          description: `Veuillez scanner l'une des trémies actives : ${activeAssignments.map(a => a.tremie).join(', ')}. Vous avez scanné une trémie non configurée.`,
         });
-        // Reset scanner by changing key to allow a new scan
         setScannerKey(Date.now());
         return;
       }
@@ -90,6 +90,7 @@ export default function ScanPage() {
       // On success for hopper, hide scanner and set QR
       setShowScanner(false);
       setHopperQr(decodedText);
+      setMatchingAssignment(matching);
     }
   };
   
@@ -105,19 +106,20 @@ export default function ScanPage() {
     setTimeout(() => {
       setProductQr(null);
       setHopperQr(null);
+      setMatchingAssignment(null);
       setScanStep('product');
       setShowScanner(true);
       setScannerKey(Date.now());
     }, 300); 
   };
   
-  const scanResultForDialog = productQr && hopperQr && activeAssignment ? {
+  const scanResultForDialog = productQr && hopperQr && matchingAssignment ? {
       qrData: `Produit: ${productQr}, Trémie: ${hopperQr}`,
-      sml: activeAssignment.sml,
-      tremie: activeAssignment.tremie
+      sml: matchingAssignment.sml,
+      tremie: matchingAssignment.tremie
   } : null;
 
-  if (!profileLoaded || !configLoaded || !profile || !activeAssignment) {
+  if (!profileLoaded || !configLoaded || !profile || activeAssignments.length === 0) {
     return (
         <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
             <div className="text-center w-full">
@@ -129,6 +131,8 @@ export default function ScanPage() {
         </div>
     );
   }
+  
+  const activeHoppers = activeAssignments.map(a => a.tremie).join(', ');
 
   const getTitle = () => {
     if (scanStep === 'product') {
@@ -137,17 +141,17 @@ export default function ScanPage() {
     if (scanStep === 'product_scanned') {
       return "Produit scanné";
     }
-    return "Scanner le code QR de la Trémie";
+    return `Scanner le code QR de la Trémie`;
   };
 
   const getDescription = () => {
     if (scanStep === 'product') {
-      return `Session: ${activeAssignment.sml} / ${activeAssignment.tremie}. Positionnez le code QR de votre produit.`;
+      return `Trémies actives : ${activeHoppers}. Positionnez le code QR de votre produit.`;
     }
     if (scanStep === 'product_scanned') {
-      return `Session: ${activeAssignment.sml} / ${activeAssignment.tremie}. Le produit a bien été identifié.`;
+      return `Le produit a bien été identifié.`;
     }
-    return `Session: ${activeAssignment.sml} / ${activeAssignment.tremie}. Positionnez le code QR de la trémie.`;
+    return `Scannez la trémie correspondante. Actives : ${activeHoppers}.`;
   };
   
 
@@ -179,7 +183,7 @@ export default function ScanPage() {
                 <ArrowRight className="h-4 w-4" />
                 <AlertTitle>Action requise</AlertTitle>
                 <AlertDescription>
-                   Le produit doit aller dans la {activeAssignment.tremie}.
+                   Ce produit doit aller dans l'une des trémies suivantes : {activeHoppers}.
                 </AlertDescription>
             </Alert>
             

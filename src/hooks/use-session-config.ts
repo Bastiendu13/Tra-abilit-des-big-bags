@@ -10,15 +10,16 @@ export interface Assignment {
 
 export interface SessionConfig {
   assignments: Assignment[];
-  activeAssignmentId: string | null;
+  activeAssignmentIds: string[];
 }
 
 interface SessionConfigContextType {
   assignments: Assignment[];
-  activeAssignment: Assignment | null;
+  activeAssignments: Assignment[];
   addAssignment: (sml: string, tremie: string) => void;
   removeAssignment: (assignmentId: string) => void;
-  setActiveAssignmentId: (assignmentId: string | null) => void;
+  activateAssignment: (assignmentId: string) => void;
+  deactivateAssignment: (assignmentId: string) => void;
   isLoaded: boolean;
 }
 
@@ -27,7 +28,7 @@ const CONFIG_KEY = 'tracefacile-session-config';
 const SessionConfigContext = createContext<SessionConfigContextType | undefined>(undefined);
 
 export function SessionConfigProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = useState<SessionConfig>({ assignments: [], activeAssignmentId: null });
+  const [config, setConfig] = useState<SessionConfig>({ assignments: [], activeAssignmentIds: [] });
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -37,12 +38,20 @@ export function SessionConfigProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(storedConfig);
         // Basic validation to prevent crashes on structure change
         if (parsed.assignments && Array.isArray(parsed.assignments)) {
+          // Compatibility for old structure
+          if (parsed.activeAssignmentId && !parsed.activeAssignmentIds) {
+            parsed.activeAssignmentIds = parsed.activeAssignmentId ? [parsed.activeAssignmentId] : [];
+            delete parsed.activeAssignmentId;
+          }
+          if (!parsed.activeAssignmentIds) {
+             parsed.activeAssignmentIds = [];
+          }
           setConfig(parsed);
         }
       }
     } catch (error) {
       console.error("Failed to load session config from localStorage", error);
-      setConfig({ assignments: [], activeAssignmentId: null });
+      setConfig({ assignments: [], activeAssignmentIds: [] });
     }
     setIsLoaded(true);
   }, []);
@@ -68,29 +77,41 @@ export function SessionConfigProvider({ children }: { children: ReactNode }) {
   const removeAssignment = useCallback((assignmentId: string) => {
     setConfig(prevConfig => {
       const newAssignments = prevConfig.assignments.filter(a => a.id !== assignmentId);
-      const newActiveId = prevConfig.activeAssignmentId === assignmentId ? null : prevConfig.activeAssignmentId;
-      const newConfig = { assignments: newAssignments, activeAssignmentId: newActiveId };
+      const newActiveIds = prevConfig.activeAssignmentIds.filter(id => id !== assignmentId);
+      const newConfig = { assignments: newAssignments, activeAssignmentIds: newActiveIds };
       updateConfig(newConfig);
       return newConfig;
     });
   }, []);
 
-  const setActiveAssignmentId = useCallback((assignmentId: string | null) => {
+  const activateAssignment = useCallback((assignmentId: string) => {
     setConfig(prevConfig => {
-      const newConfig = { ...prevConfig, activeAssignmentId: assignmentId };
+      if (prevConfig.activeAssignmentIds.includes(assignmentId)) return prevConfig;
+      const newConfig = { ...prevConfig, activeAssignmentIds: [...prevConfig.activeAssignmentIds, assignmentId] };
       updateConfig(newConfig);
       return newConfig;
     });
   }, []);
 
-  const activeAssignment = config.assignments.find(a => a.id === config.activeAssignmentId) || null;
+  const deactivateAssignment = useCallback((assignmentId: string) => {
+    setConfig(prevConfig => {
+      const newActiveIds = prevConfig.activeAssignmentIds.filter(id => id !== assignmentId);
+      if (newActiveIds.length === prevConfig.activeAssignmentIds.length) return prevConfig;
+      const newConfig = { ...prevConfig, activeAssignmentIds: newActiveIds };
+      updateConfig(newConfig);
+      return newConfig;
+    });
+  }, []);
+
+  const activeAssignments = config.assignments.filter(a => config.activeAssignmentIds.includes(a.id));
 
   const value = { 
       assignments: config.assignments, 
-      activeAssignment,
+      activeAssignments,
       addAssignment,
       removeAssignment,
-      setActiveAssignmentId,
+      activateAssignment,
+      deactivateAssignment,
       isLoaded 
   };
 
