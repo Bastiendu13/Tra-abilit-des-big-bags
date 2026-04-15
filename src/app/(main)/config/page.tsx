@@ -6,7 +6,7 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 import { useSessionConfig } from '@/hooks/use-session-config';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronRight, Settings, ScanLine, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronRight, Settings, CheckCircle, XCircle, Save } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -58,10 +58,10 @@ export default function ConfigPage() {
     setSelectedTremie(tremie);
   };
 
-  const handleStartScan = () => {
+  const handleSaveAndExit = () => {
     if (selectedSml && selectedTremie) {
         setConfig(selectedSml, selectedTremie);
-        router.push('/scan');
+        router.push('/');
     }
   };
   
@@ -188,9 +188,9 @@ export default function ConfigPage() {
                     </p>
                 </CardContent>
              </Card>
-             <Button onClick={handleStartScan} size="lg" className="shadow-lg w-full max-w-xs">
-                <ScanLine className="mr-2 h-5 w-5" />
-                Commencer le scan
+             <Button onClick={handleSaveAndExit} size="lg" className="shadow-lg w-full max-w-xs">
+                <Save className="mr-2 h-5 w-5" />
+                Sauvegarder et quitter
             </Button>
           </div>
       )}
