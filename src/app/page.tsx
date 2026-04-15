@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 export default function Home() {
   const heroImage = PlaceHolderImages.find(p => p.id === 'hero-image');
   const { setProfile } = useUserProfile();
-  const { config, isLoaded } = useSessionConfig();
+  const { activeAssignment, isLoaded } = useSessionConfig();
   const router = useRouter();
 
   const handleProfileSelect = (profile: 'administrateur' | 'utilisateur') => {
@@ -20,7 +20,7 @@ export default function Home() {
       router.push('/config');
     } else {
       // For user, check if session is configured
-      if (isLoaded && config.sml) {
+      if (isLoaded && activeAssignment) {
          router.push('/scan');
       } else {
          router.push('/wait-for-config');

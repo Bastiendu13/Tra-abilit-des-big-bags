@@ -8,14 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default function WaitForConfigPage() {
     const router = useRouter();
-    const { config, isLoaded } = useSessionConfig();
+    const { activeAssignment, isLoaded } = useSessionConfig();
 
     useEffect(() => {
         // If config is set, redirect to scan page
-        if (isLoaded && config.sml) {
+        if (isLoaded && activeAssignment) {
             router.replace('/scan');
         }
-    }, [config, isLoaded, router]);
+    }, [activeAssignment, isLoaded, router]);
 
     return (
         <div className="flex items-center justify-center h-full">
@@ -26,14 +26,14 @@ export default function WaitForConfigPage() {
                         En attente de configuration
                     </CardTitle>
                     <CardDescription>
-                       La session de scan n'a pas encore été configurée.
+                       Une session de scan doit être activée par un administrateur.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
                         <Settings className="mx-auto h-12 w-12" />
                         <p className="mt-4">
-                           Veuillez demander à un administrateur de configurer le SML et la trémie pour pouvoir commencer à scanner.
+                           Veuillez demander à un administrateur d'activer une affectation SML/trémie pour pouvoir commencer à scanner.
                         </p>
                         <p className="mt-2 text-sm">
                             Cette page se rafraîchira automatiquement.

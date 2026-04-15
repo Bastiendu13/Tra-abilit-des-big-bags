@@ -25,7 +25,7 @@ type ScanStep = 'product' | 'product_scanned' | 'hopper';
 
 export default function ScanPage() {
   const { profile, isLoaded: profileLoaded } = useUserProfile();
-  const { config, isLoaded: configLoaded } = useSessionConfig();
+  const { activeAssignment, isLoaded: configLoaded } = useSessionConfig();
   const router = useRouter();
   const [scanStep, setScanStep] = useState<ScanStep>('product');
   const [productQr, setProductQr] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export default function ScanPage() {
 
     // Protection logic
     if (configLoaded) {
-      if (!config.sml || !config.tremie) {
+      if (!activeAssignment) {
         if (profile === 'administrateur') {
           router.replace('/config');
         } else if (profile === 'utilisateur') {
@@ -50,7 +50,7 @@ export default function ScanPage() {
         }
       }
     }
-  }, [profileLoaded, configLoaded, profile, config, router]);
+  }, [profileLoaded, configLoaded, profile, activeAssignment, router]);
 
   // This effect will trigger the dialog once we have both QR codes.
   useEffect(() => {
@@ -61,9 +61,9 @@ export default function ScanPage() {
 
   const handleScanSuccess = (decodedText: string) => {
     if (scanStep === 'product') {
-      setShowScanner(false);
       setProductQr(decodedText);
       setScanStep('product_scanned');
+      setShowScanner(false);
     } else if (scanStep === 'hopper') {
       // Don't scan the same product QR as hopper QR
       if (decodedText === productQr) {
@@ -77,10 +77,10 @@ export default function ScanPage() {
       };
 
       // Check if the scanned hopper QR matches the session configuration
-      if (decodedText !== config.tremie) {
+      if (decodedText !== activeAssignment?.tremie) {
         setErrorDialog({
           title: "Mauvaise trémie scannée",
-          description: `Veuillez scanner la ${config.tremie}. Vous avez scanné une autre trémie.`,
+          description: `Veuillez scanner la ${activeAssignment?.tremie}. Vous avez scanné une autre trémie.`,
         });
         // Reset scanner by changing key to allow a new scan
         setScannerKey(Date.now());
@@ -111,13 +111,13 @@ export default function ScanPage() {
     }, 300); 
   };
   
-  const scanResultForDialog = productQr && hopperQr && config.sml && config.tremie ? {
+  const scanResultForDialog = productQr && hopperQr && activeAssignment ? {
       qrData: `Produit: ${productQr}, Trémie: ${hopperQr}`,
-      sml: config.sml,
-      tremie: config.tremie
+      sml: activeAssignment.sml,
+      tremie: activeAssignment.tremie
   } : null;
 
-  if (!profileLoaded || !configLoaded || !profile || !config.sml || !config.tremie) {
+  if (!profileLoaded || !configLoaded || !profile || !activeAssignment) {
     return (
         <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
             <div className="text-center w-full">
@@ -142,12 +142,12 @@ export default function ScanPage() {
 
   const getDescription = () => {
     if (scanStep === 'product') {
-      return `Session: ${config.sml} / ${config.tremie}. Positionnez le code QR de votre produit.`;
+      return `Session: ${activeAssignment.sml} / ${activeAssignment.tremie}. Positionnez le code QR de votre produit.`;
     }
     if (scanStep === 'product_scanned') {
-      return `Session: ${config.sml} / ${config.tremie}. Le produit a bien été identifié.`;
+      return `Session: ${activeAssignment.sml} / ${activeAssignment.tremie}. Le produit a bien été identifié.`;
     }
-    return `Session: ${config.sml} / ${config.tremie}. Positionnez le code QR de la trémie.`;
+    return `Session: ${activeAssignment.sml} / ${activeAssignment.tremie}. Positionnez le code QR de la trémie.`;
   };
   
 
@@ -160,8 +160,9 @@ export default function ScanPage() {
         </p>
       </div>
       
-      {/* Conditionally render QrScanner to ensure it unmounts and stops correctly */}
-      {showScanner && <QrScanner key={scannerKey} onScanSuccess={handleScanSuccess} />}
+      {showScanner && (
+         <QrScanner key={scannerKey} onScanSuccess={handleScanSuccess} />
+      )}
 
       {scanStep === 'product_scanned' && productQr && !hopperQr && (
         <div className="w-full space-y-6 animate-in fade-in duration-500">
@@ -178,7 +179,7 @@ export default function ScanPage() {
                 <ArrowRight className="h-4 w-4" />
                 <AlertTitle>Action requise</AlertTitle>
                 <AlertDescription>
-                   Le produit doit aller dans la {config.tremie}.
+                   Le produit doit aller dans la {activeAssignment.tremie}.
                 </AlertDescription>
             </Alert>
             
