@@ -5,11 +5,13 @@ import Image from 'next/image';
 import { User, Shield } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import { useSessionConfig } from '@/hooks/use-session-config';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const heroImage = PlaceHolderImages.find(p => p.id === 'hero-image');
   const { setProfile } = useUserProfile();
+  const { config, isLoaded } = useSessionConfig();
   const router = useRouter();
 
   const handleProfileSelect = (profile: 'administrateur' | 'utilisateur') => {
@@ -17,7 +19,12 @@ export default function Home() {
     if (profile === 'administrateur') {
       router.push('/config');
     } else {
-      router.push('/scan');
+      // For user, check if session is configured
+      if (isLoaded && config.sml) {
+         router.push('/scan');
+      } else {
+         router.push('/wait-for-config');
+      }
     }
   };
 
@@ -48,7 +55,7 @@ export default function Home() {
                     <Shield className="mr-2 h-5 w-5" />
                     Administrateur
                 </Button>
-                <Button onClick={() => handleProfileSelect('utilisateur')} size="lg" variant="secondary" className="shadow-lg">
+                <Button onClick={() => handleProfileSelect('utilisateur')} size="lg" variant="secondary" className="shadow-lg" disabled={!isLoaded}>
                     <User className="mr-2 h-5 w-5" />
                     Utilisateur
                 </Button>

@@ -10,15 +10,19 @@ import type { AISuggestTraceabilityContextOutput } from '@/ai/flows/ai-suggest-t
 import { useScanHistory } from '@/hooks/use-scan-history';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
-import { CheckCircle, Lightbulb, List, Package, Save, Share2 } from 'lucide-react';
+import { CheckCircle, Lightbulb, List, Package, Save, Share2, Server, ChevronRight } from 'lucide-react';
 
 interface ScanResultDialogProps {
-  qrData: string;
+  scanData: {
+    qrData: string;
+    sml: string;
+    tremie: string;
+  };
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function ScanResultDialog({ qrData, isOpen, onClose }: ScanResultDialogProps) {
+export function ScanResultDialog({ scanData, isOpen, onClose }: ScanResultDialogProps) {
   const [aiContext, setAiContext] = useState<AISuggestTraceabilityContextOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,13 +30,13 @@ export function ScanResultDialog({ qrData, isOpen, onClose }: ScanResultDialogPr
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isOpen && qrData) {
+    if (isOpen && scanData.qrData) {
       const fetchContext = async () => {
         setIsLoading(true);
         setError(null);
         setAiContext(null);
         try {
-          const context = await getTraceabilityContext(qrData);
+          const context = await getTraceabilityContext(scanData.qrData);
           setAiContext(context);
         } catch (e: any) {
           setError(e.message || "Une erreur est survenue lors de l'analyse IA.");
@@ -42,10 +46,10 @@ export function ScanResultDialog({ qrData, isOpen, onClose }: ScanResultDialogPr
       };
       fetchContext();
     }
-  }, [isOpen, qrData]);
+  }, [isOpen, scanData.qrData]);
 
   const handleSave = () => {
-    addScan({ qrData, aiContext: aiContext ?? undefined });
+    addScan({ ...scanData, aiContext: aiContext ?? undefined });
     toast({
       title: "Scan sauvegardé",
       description: "Le résultat du scan a été ajouté à votre historique.",
@@ -60,14 +64,23 @@ export function ScanResultDialog({ qrData, isOpen, onClose }: ScanResultDialogPr
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><CheckCircle className="text-green-500" />Scan réussi !</DialogTitle>
           <DialogDescription>
-            Voici les informations extraites du code QR et l'analyse de l'IA.
+            Voici les informations extraites et l'analyse de l'IA.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div>
+            <h4 className="font-semibold text-sm mb-2 text-muted-foreground flex items-center gap-2"><Server />Informations de session</h4>
+            <div className="text-sm bg-muted p-3 rounded-md font-mono break-all flex items-center justify-between">
+                <span>SML: <strong>{scanData.sml}</strong></span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <span>Trémie: <strong>{scanData.tremie}</strong></span>
+            </div>
+          </div>
+
+          <div>
             <h4 className="font-semibold text-sm mb-2 text-muted-foreground">Données brutes du QR</h4>
-            <p className="text-sm bg-muted p-3 rounded-md font-mono break-all">{qrData}</p>
+            <p className="text-sm bg-secondary p-3 rounded-md font-mono break-all">{scanData.qrData}</p>
           </div>
 
           <div className="space-y-4">

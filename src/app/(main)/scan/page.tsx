@@ -5,16 +5,18 @@ import { QrScanner } from '@/components/qr-scanner';
 import { ScanResultDialog } from '@/components/scan-result-dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { QrCode, ArrowRight } from 'lucide-react';
+import { QrCode, ArrowRight, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import { useSessionConfig } from '@/hooks/use-session-config';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type ScanStep = 'product' | 'product_scanned' | 'hopper';
 
 export default function ScanPage() {
-  const { profile, isLoaded } = useUserProfile();
+  const { profile, isLoaded: profileLoaded } = useUserProfile();
+  const { config, isLoaded: configLoaded } = useSessionConfig();
   const router = useRouter();
   const [scanStep, setScanStep] = useState<ScanStep>('product');
   const [productQr, setProductQr] = useState<string | null>(null);
@@ -23,10 +25,21 @@ export default function ScanPage() {
   const [showScanner, setShowScanner] = useState(true);
 
   useEffect(() => {
-    if (isLoaded && !profile) {
+    if (profileLoaded && !profile) {
       router.push('/');
     }
-  }, [isLoaded, profile, router]);
+
+    // Protection logic
+    if (configLoaded) {
+      if (!config.sml || !config.tremie) {
+        if (profile === 'administrateur') {
+          router.replace('/config');
+        } else if (profile === 'utilisateur') {
+          router.replace('/wait-for-config');
+        }
+      }
+    }
+  }, [profileLoaded, configLoaded, profile, config, router]);
 
   // This effect will trigger the dialog once we have both QR codes.
   useEffect(() => {
@@ -69,6 +82,25 @@ export default function ScanPage() {
       setShowScanner(true);
     }, 300); 
   };
+  
+  const scanResultForDialog = productQr && hopperQr && config.sml && config.tremie ? {
+      qrData: `Produit: ${productQr}, Trémie: ${hopperQr}`,
+      sml: config.sml,
+      tremie: config.tremie
+  } : null;
+
+  if (!profileLoaded || !configLoaded || !profile || !config.sml) {
+    return (
+        <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
+            <div className="text-center w-full">
+                <Skeleton className="h-10 w-3/4 mx-auto" />
+                <Skeleton className="h-6 w-1/2 mx-auto mt-2" />
+            </div>
+            <Skeleton className="w-full max-w-lg aspect-square rounded-lg" />
+            <p className="flex items-center gap-2 text-muted-foreground"><Settings className="animate-spin" />Chargement de la configuration de la session...</p>
+        </div>
+    );
+  }
 
   const getTitle = () => {
     if (scanStep === 'product') {
@@ -82,27 +114,14 @@ export default function ScanPage() {
 
   const getDescription = () => {
     if (scanStep === 'product') {
-      return "Positionnez le code QR de votre produit dans le cadre.";
+      return `Session: ${config.sml} / ${config.tremie}. Positionnez le code QR de votre produit.`;
     }
     if (scanStep === 'product_scanned') {
-      return "Le produit a bien été identifié. Passez à l'étape suivante.";
+      return `Session: ${config.sml} / ${config.tremie}. Le produit a bien été identifié.`;
     }
-    return `Maintenant, positionnez le code QR de la trémie dans le cadre.`;
+    return `Session: ${config.sml} / ${config.tremie}. Positionnez le code QR de la trémie.`;
   };
   
-  const scanResultForDialog = productQr && hopperQr ? `Produit: ${productQr}, Trémie: ${hopperQr}` : null;
-
-  if (!isLoaded || !profile) {
-    return (
-        <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
-            <div className="text-center w-full">
-                <Skeleton className="h-10 w-3/4 mx-auto" />
-                <Skeleton className="h-6 w-1/2 mx-auto mt-2" />
-            </div>
-            <Skeleton className="w-full max-w-lg aspect-square rounded-lg" />
-        </div>
-    );
-  }
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
@@ -144,7 +163,7 @@ export default function ScanPage() {
 
       {scanResultForDialog && (
         <ScanResultDialog
-          qrData={scanResultForDialog}
+          scanData={scanResultForDialog}
           isOpen={isDialogOpen}
           onClose={handleDialogClose}
         />

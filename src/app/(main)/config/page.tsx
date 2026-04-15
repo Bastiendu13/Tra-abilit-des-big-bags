@@ -3,26 +3,50 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import { useSessionConfig } from '@/hooks/use-session-config';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronRight, Settings, ScanLine, CheckCircle } from 'lucide-react';
+import { ChevronRight, Settings, ScanLine, CheckCircle, XCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const SML_OPTIONS = Array.from({ length: 8 }, (_, i) => `SML${i + 1}`);
 const TREMIE_OPTIONS = Array.from({ length: 6 }, (_, i) => `Trémie ${i + 1}`);
 
 export default function ConfigPage() {
-  const { profile, isLoaded } = useUserProfile();
+  const { profile, isLoaded: profileLoaded } = useUserProfile();
+  const { config, setConfig, clearConfig, isLoaded: configLoaded } = useSessionConfig();
   const router = useRouter();
+
   const [selectedSml, setSelectedSml] = useState<string | null>(null);
   const [selectedTremie, setSelectedTremie] = useState<string | null>(null);
 
   useEffect(() => {
     // Redirect if not admin or profile not loaded yet
-    if (isLoaded && profile !== 'administrateur') {
+    if (profileLoaded && profile !== 'administrateur') {
       router.push('/');
     }
-  }, [isLoaded, profile, router]);
+  }, [profileLoaded, profile, router]);
+  
+  useEffect(() => {
+    // Pre-fill selection from context
+    if (configLoaded && config.sml) {
+        setSelectedSml(config.sml);
+    }
+    if (configLoaded && config.tremie) {
+        setSelectedTremie(config.tremie);
+    }
+  }, [configLoaded, config]);
 
   const handleSmlSelect = (sml: string) => {
     setSelectedSml(sml);
@@ -35,12 +59,19 @@ export default function ConfigPage() {
   };
 
   const handleStartScan = () => {
-    // Here we would ideally store the configuration in a context or pass it via state
-    // For now, just navigate to the scan page.
-    router.push('/scan');
+    if (selectedSml && selectedTremie) {
+        setConfig(selectedSml, selectedTremie);
+        router.push('/scan');
+    }
   };
+  
+  const handleClearConfig = () => {
+    clearConfig();
+    setSelectedSml(null);
+    setSelectedTremie(null);
+  }
 
-  if (!isLoaded || !profile) {
+  if (!profileLoaded || !configLoaded || !profile) {
     return (
       <div className="space-y-8 max-w-4xl mx-auto">
         <Skeleton className="h-10 w-3/4" />
@@ -59,14 +90,38 @@ export default function ConfigPage() {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Settings className="h-8 w-8" />
-          Configuration Administrateur
-        </h1>
-        <p className="text-muted-foreground">
-          Veuillez paramétrer la session avant de commencer le scan.
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Settings className="h-8 w-8" />
+            Configuration de la Session
+          </h1>
+          <p className="text-muted-foreground">
+            Veuillez paramétrer la session avant de commencer le scan.
+          </p>
+        </div>
+        {config.sml && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button variant="destructive" >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Réinitialiser
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Réinitialiser la session ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action est irréversible et effacera la configuration de la session (SML et trémie). Les utilisateurs seront déconnectés jusqu'à ce qu'une nouvelle configuration soit définie. L'historique des scans ne sera pas affecté.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearConfig}>Confirmer</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       <Card>
@@ -127,7 +182,7 @@ export default function ConfigPage() {
           <div className="flex flex-col items-center gap-8 text-center animate-in fade-in duration-500">
              <Card className="bg-secondary border-primary/20 w-full">
                 <CardContent className="p-6">
-                    <p className="text-lg font-medium text-secondary-foreground">Configuration terminée :</p>
+                    <p className="text-lg font-medium text-secondary-foreground">Configuration de la session :</p>
                     <p className="text-2xl font-bold text-primary flex items-center justify-center">
                         {selectedSml} <ChevronRight className="inline-block h-6 w-6 mx-2" /> {selectedTremie}
                     </p>

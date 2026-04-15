@@ -2,7 +2,7 @@
 
 import { useScanHistory } from '@/hooks/use-scan-history';
 import { Button } from '@/components/ui/button';
-import { FileDown, History, Trash2 } from 'lucide-react';
+import { FileDown, History, Trash2, Server } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
@@ -36,13 +36,11 @@ export default function HistoryPage() {
     const flattenedData = scans.map(scan => {
       let productQr = '';
       let hopperQr = '';
-      // Regex to parse the combined QR data string
       const match = scan.qrData.match(/Produit: (.*), Trémie: (.*)/);
       if (match && match.length === 3) {
         productQr = match[1];
         hopperQr = match[2];
       } else {
-        // Fallback for older data that is not in the new combined format
         productQr = scan.qrData;
         hopperQr = 'N/A';
       }
@@ -50,6 +48,8 @@ export default function HistoryPage() {
       return {
         id: scan.id,
         timestamp: new Date(scan.timestamp).toISOString(),
+        sml: scan.sml,
+        tremie: scan.tremie,
         'Code Produit': productQr,
         'Code Trémie': hopperQr,
         aiSummary: scan.aiContext?.summary.replace(/[\n,"]/g, ' ') || '',
@@ -125,7 +125,13 @@ export default function HistoryPage() {
           {scans.map(scan => (
             <Card key={scan.id}>
               <CardHeader>
-                <CardTitle className="break-all text-lg">{scan.qrData}</CardTitle>
+                <div className="flex justify-between items-center">
+                    <CardTitle className="break-all text-lg">{scan.qrData}</CardTitle>
+                    <Badge variant="outline" className="flex-shrink-0 ml-4">
+                        <Server className="mr-2 h-4 w-4"/>
+                        {scan.sml} / {scan.tremie}
+                    </Badge>
+                </div>
                 <CardDescription>
                   Scanné le {new Date(scan.timestamp).toLocaleString('fr-FR')}
                 </CardDescription>
