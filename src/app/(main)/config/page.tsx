@@ -57,8 +57,7 @@ export default function ConfigPage() {
           title: "Configuration sauvegardée",
           description: `La session est maintenant configurée pour ${selectedSml} / ${selectedTremie}.`,
         });
-        setSelectedSml(null);
-        setSelectedTremie(null);
+        router.push('/');
     }
   };
   
@@ -209,7 +208,7 @@ export default function ConfigPage() {
              </Card>
              <Button onClick={handleSaveConfig} size="lg" className="shadow-lg w-full max-w-xs">
                 <Save className="mr-2 h-5 w-5" />
-                Sauvegarder la configuration
+                Sauvegarder et quitter
             </Button>
           </div>
       )}
