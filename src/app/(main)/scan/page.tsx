@@ -90,24 +90,19 @@ export default function ScanPage() {
         return;
       };
 
-      // First, try to find an assignment based on SML in the product QR
-      // We can re-use the memoized value, but it's cheap to re-calculate here.
-      const currentAssignmentBasedOnSml = productQr 
-          ? activeAssignments.find(a => productQr.includes(a.sml))
-          : undefined;
-
-      if (currentAssignmentBasedOnSml) {
+      // Re-use memoized value, it's correct for this render pass
+      if (assignmentBasedOnSml) {
           // A specific SML was found in the product. The hopper MUST match.
-          if (decodedText === currentAssignmentBasedOnSml.tremie) {
+          if (decodedText === assignmentBasedOnSml.tremie) {
               // SUCCESS: SML detected and correct hopper scanned.
               setShowScanner(false);
               setHopperQr(decodedText);
-              setMatchingAssignment(currentAssignmentBasedOnSml);
+              setMatchingAssignment(assignmentBasedOnSml);
           } else {
               // ERROR: SML detected but WRONG hopper scanned.
               setErrorDialog({
                   title: "Affectation incorrecte",
-                  description: `Pour le produit contenant "${currentAssignmentBasedOnSml.sml}", la trémie attendue est "${currentAssignmentBasedOnSml.tremie}". Vous avez scanné "${decodedText}".`,
+                  description: `Pour le produit contenant "${assignmentBasedOnSml.sml}", la trémie attendue est "${assignmentBasedOnSml.tremie}". Vous avez scanné "${decodedText}".`,
               });
               setScannerKey(Date.now());
           }
@@ -228,7 +223,7 @@ export default function ScanPage() {
                 <AlertTitle>Action requise</AlertTitle>
                 <AlertDescription>
                    {assignmentBasedOnSml
-                       ? `Ce produit doit aller dans la trémie : ${assignmentBasedOnSml.tremie}.`
+                       ? `Ce produit est pour le SML "${assignmentBasedOnSml.sml}". La trémie correspondante est "${assignmentBasedOnSml.tremie}".`
                        : `Ce produit doit aller dans une trémie d'une session active : ${activeAssignmentsText}.`
                    }
                 </AlertDescription>
