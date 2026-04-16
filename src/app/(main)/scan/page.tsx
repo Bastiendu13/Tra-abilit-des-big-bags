@@ -46,35 +46,46 @@ export default function ScanPage() {
   }, [profileLoaded, configLoaded, profile, activeAssignments, router]);
 
   const handleScanSuccess = (decodedText: string) => {
-    const normalizedDecodedText = decodedText.toUpperCase();
+    let assignment: Assignment | null | undefined = undefined;
 
-    const assignment = activeAssignments.find(a => {
-        const smlPattern = a.sml.toUpperCase(); // e.g., "SML3"
-        
-        const smlParts = smlPattern.match(/([A-Z]+)(\d+)/);
-        if (!smlParts) {
-            // Fallback for an unexpected format, just do a simple includes check
-            return normalizedDecodedText.includes(smlPattern);
-        }
+    // This case is already handled by the redirect, but it's a good safeguard.
+    if (activeAssignments.length === 0) {
+        setErrorDialog({
+            title: "Aucune session active",
+            description: "Veuillez demander à un administrateur d'activer une session de scan.",
+        });
+        setScannerKey(Date.now());
+        return;
+    }
 
-        const prefix = smlParts[1]; // "SML"
-        const number = smlParts[2]; // "3"
-
-        // This regex looks for the SML code (e.g., SML3, SML-3, SML 3)
-        // \b is a word boundary. This prevents matching SML3 in SML30.
-        const regex = new RegExp(`\\b${prefix}[-_\\s]?${number}\\b`);
-
-        return regex.test(normalizedDecodedText);
-    });
+    if (activeAssignments.length === 1) {
+        // If there's only one active session, we associate any scan with it, assuming it's a product for that session.
+        assignment = activeAssignments[0];
+    } else {
+        // If multiple sessions are active, we must find the SML in the QR code to disambiguate.
+        const normalizedDecodedText = decodedText.toUpperCase();
+        assignment = activeAssignments.find(a => {
+            const smlPattern = a.sml.toUpperCase();
+            const smlParts = smlPattern.match(/([A-Z]+)(\d+)/);
+            if (!smlParts) {
+                return normalizedDecodedText.includes(smlPattern);
+            }
+            const prefix = smlParts[1];
+            const number = smlParts[2];
+            const regex = new RegExp(`\\b${prefix}[-_\\s]?${number}\\b`);
+            return regex.test(normalizedDecodedText);
+        });
+    }
 
     if (assignment) {
       setMatchingAssignment(assignment);
       setShowScanner(false);
       setIsDialogOpen(true);
     } else {
+      // This is reached if multiple sessions are active and the QR code doesn't match any of them.
       setErrorDialog({
-        title: "SML non configuré",
-        description: "Le SML scanné ne fait partie d'aucune session de scan active.",
+        title: "SML non identifiable",
+        description: "Plusieurs sessions sont actives et le SML n'a pas pu être identifié dans le code QR. Veuillez scanner un code contenant l'identifiant SML.",
       });
       setScannerKey(Date.now());
     }
@@ -89,7 +100,7 @@ export default function ScanPage() {
     }, 300);
   };
 
-  if (!profileLoaded || !configLoaded || !profile || activeAssignments.length === 0) {
+    if (!profileLoaded || !configLoaded || !profile || activeAssignments.length === 0) {
     return (
         <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
             <div className="text-center w-full">
