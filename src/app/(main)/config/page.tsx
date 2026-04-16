@@ -2,20 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUserProfile } from '@/hooks/use-user-profile';
 import { useSessionConfig } from '@/hooks/use-session-config';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronRight, Settings, PlusCircle, Trash2, Power, PowerOff } from 'lucide-react';
+import { ChevronRight, Settings, PlusCircle, Trash2, Power, PowerOff, Shield, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/firebase';
+import { useFirestoreUser } from '@/hooks/use-firestore-user';
 
 const SML_OPTIONS = Array.from({ length: 8 }, (_, i) => `SML${i + 1}`);
 const TREMIE_OPTIONS = Array.from({ length: 6 }, (_, i) => `Trémie ${i + 1}`);
 
 export default function ConfigPage() {
-  const { profile, isLoaded: profileLoaded } = useUserProfile();
+  const { user, isUserLoading } = useUser();
+  const { firestoreUser, isLoading: isFirestoreUserLoading } = useFirestoreUser(user?.uid);
   const { assignments, activeAssignments, addAssignment, removeAssignment, activateAssignment, deactivateAssignment, isLoaded: configLoaded } = useSessionConfig();
   const router = useRouter();
   const { toast } = useToast();
@@ -23,11 +25,21 @@ export default function ConfigPage() {
   const [selectedSml, setSelectedSml] = useState<string | null>(null);
   const [selectedTremie, setSelectedTremie] = useState<string | null>(null);
 
+  const isLoading = isUserLoading || isFirestoreUserLoading || !configLoaded;
+  const isAuthorized = !isLoading && user && firestoreUser?.role === 'admin';
+
   useEffect(() => {
-    if (profileLoaded && profile !== 'administrateur') {
-      router.push('/');
+    if (!isLoading && !user) {
+      router.replace('/login');
+    } else if (!isLoading && user && firestoreUser?.role !== 'admin') {
+      router.replace('/scan');
+      toast({
+        variant: "destructive",
+        title: "Accès non autorisé",
+        description: "Vous devez être administrateur pour accéder à cette page."
+      });
     }
-  }, [profileLoaded, profile, router]);
+  }, [isLoading, user, firestoreUser, router, toast]);
 
   const handleAddAssignment = () => {
     if (selectedSml && selectedTremie) {
@@ -67,19 +79,27 @@ export default function ConfigPage() {
     });
   };
 
-  if (!profileLoaded || !configLoaded || !profile) {
+  if (isLoading) {
     return (
       <div className="space-y-8 max-w-4xl mx-auto">
         <Skeleton className="h-10 w-3/4" />
         <Card>
-          <CardHeader>
-            <Skeleton className="h-8 w-1/2" />
-          </CardHeader>
+          <CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader>
           <CardContent className="space-y-4">
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+     return (
+      <div className="flex flex-col items-center justify-center h-full text-center">
+        <AlertTriangle className="h-16 w-16 text-destructive mb-4" />
+        <h1 className="text-2xl font-bold">Accès refusé</h1>
+        <p className="text-muted-foreground">Vous n'avez pas les autorisations nécessaires pour voir cette page.</p>
       </div>
     );
   }
@@ -192,7 +212,6 @@ export default function ConfigPage() {
                 )}
             </CardContent>
         </Card>
-
     </div>
   );
 }

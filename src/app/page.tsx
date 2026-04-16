@@ -14,17 +14,12 @@ export default function Home() {
   const { activeAssignments, isLoaded } = useSessionConfig();
   const router = useRouter();
 
-  const handleProfileSelect = (profile: 'administrateur' | 'utilisateur') => {
-    setProfile(profile);
-    if (profile === 'administrateur') {
-      router.push('/config');
+  const handleOperatorProfileSelect = () => {
+    setProfile('utilisateur');
+    if (isLoaded && activeAssignments.length > 0) {
+      router.push('/scan');
     } else {
-      // For user, check if session is configured
-      if (isLoaded && activeAssignments.length > 0) {
-         router.push('/scan');
-      } else {
-         router.push('/wait-for-config');
-      }
+      router.push('/wait-for-config');
     }
   };
 
@@ -51,11 +46,11 @@ export default function Home() {
           <div className="space-y-4">
             <p className="font-semibold">Veuillez sélectionner votre profil pour commencer :</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={() => handleProfileSelect('administrateur')} size="lg" className="shadow-lg">
+                <Button onClick={() => router.push('/login')} size="lg" className="shadow-lg">
                     <Shield className="mr-2 h-5 w-5" />
                     Administrateur
                 </Button>
-                <Button onClick={() => handleProfileSelect('utilisateur')} size="lg" variant="secondary" className="shadow-lg" disabled={!isLoaded}>
+                <Button onClick={handleOperatorProfileSelect} size="lg" variant="secondary" className="shadow-lg" disabled={!isLoaded}>
                     <User className="mr-2 h-5 w-5" />
                     Utilisateur
                 </Button>
