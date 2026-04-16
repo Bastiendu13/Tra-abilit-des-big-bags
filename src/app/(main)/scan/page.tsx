@@ -46,7 +46,26 @@ export default function ScanPage() {
   }, [profileLoaded, configLoaded, profile, activeAssignments, router]);
 
   const handleScanSuccess = (decodedText: string) => {
-    const assignment = activeAssignments.find(a => decodedText.includes(a.sml));
+    const normalizedDecodedText = decodedText.toUpperCase();
+
+    const assignment = activeAssignments.find(a => {
+        const smlPattern = a.sml.toUpperCase(); // e.g., "SML3"
+        
+        const smlParts = smlPattern.match(/([A-Z]+)(\d+)/);
+        if (!smlParts) {
+            // Fallback for an unexpected format, just do a simple includes check
+            return normalizedDecodedText.includes(smlPattern);
+        }
+
+        const prefix = smlParts[1]; // "SML"
+        const number = smlParts[2]; // "3"
+
+        // This regex looks for the SML code (e.g., SML3, SML-3, SML 3)
+        // \b is a word boundary. This prevents matching SML3 in SML30.
+        const regex = new RegExp(`\\b${prefix}[-_\\s]?${number}\\b`);
+
+        return regex.test(normalizedDecodedText);
+    });
 
     if (assignment) {
       setMatchingAssignment(assignment);
