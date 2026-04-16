@@ -81,28 +81,32 @@ export default function ScanPage() {
           title: "Erreur de scan",
           description: "Le code QR de la trémie ne peut pas être le même que celui du produit.",
         });
-        // Reset scanner by changing key to allow a new scan
         setScannerKey(Date.now());
         return;
       };
 
-      const isProductAnSml = productQr ? activeAssignments.some(a => a.sml === productQr) : false;
-      let matching: Assignment | undefined | null = null;
-      
-      if (isProductAnSml && productQr) {
-        matching = activeAssignments.find(a => a.sml === productQr && a.tremie === decodedText);
+      // Check if the product QR code contains a known SML from active assignments.
+      const detectedSmlAssignment = productQr ? activeAssignments.find(a => productQr.includes(a.sml)) : undefined;
+
+      let finalMatchingAssignment: Assignment | undefined;
+
+      if (detectedSmlAssignment) {
+        // An SML was detected in the product QR. We must match the specific hopper.
+        if (decodedText === detectedSmlAssignment.tremie) {
+          finalMatchingAssignment = detectedSmlAssignment;
+        }
+        // If not, finalMatchingAssignment remains undefined, triggering the error below.
       } else {
-        matching = activeAssignments.find(a => a.tremie === decodedText);
+        // No specific SML was found in the product QR. Any active hopper is acceptable.
+        finalMatchingAssignment = activeAssignments.find(a => a.tremie === decodedText);
       }
 
-      if (!matching) {
-        let description = `La trémie scannée ("${decodedText}") n'est pas valide pour les sessions actives. Veuillez scanner l'une des trémies configurées : ${activeAssignments.map(a => `${a.sml} / ${a.tremie}`).join(' | ')}.`;
+      if (!finalMatchingAssignment) {
+        let description = `La trémie scannée ("${decodedText}") n'est pas valide pour les sessions actives. Veuillez scanner l'une des trémies configurées : ${activeAssignments.map(a => a.tremie).join(', ')}.`;
         
-        if (isProductAnSml && productQr) {
-            const expectedAssignment = activeAssignments.find(a => a.sml === productQr);
-            if (expectedAssignment) {
-                description = `Pour le SML "${productQr}", la trémie attendue est "${expectedAssignment.tremie}". Vous avez scanné "${decodedText}".`;
-            }
+        if (detectedSmlAssignment) {
+          // If we expected a specific hopper, provide a more precise error message.
+          description = `Pour le produit contenant "${detectedSmlAssignment.sml}", la trémie attendue est "${detectedSmlAssignment.tremie}". Vous avez scanné "${decodedText}".`;
         }
 
         setErrorDialog({
@@ -116,7 +120,7 @@ export default function ScanPage() {
       // On success for hopper, hide scanner and set QR
       setShowScanner(false);
       setHopperQr(decodedText);
-      setMatchingAssignment(matching);
+      setMatchingAssignment(finalMatchingAssignment);
     }
   };
   
