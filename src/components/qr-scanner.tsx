@@ -16,7 +16,16 @@ export function QrScanner({ onScanSuccess, onScanFailure }: QrScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const qrcodeRegionId = "qr-code-reader";
 
+  // Use refs for the callbacks to prevent the effect from re-running on every parent render.
+  // This is crucial for stability and prevents race conditions.
+  const onScanSuccessRef = useRef(onScanSuccess);
+  onScanSuccessRef.current = onScanSuccess;
+
+  const onScanFailureRef = useRef(onScanFailure);
+  onScanFailureRef.current = onScanFailure;
+
   useEffect(() => {
+    // The effect now runs only once on mount, thanks to the empty dependency array.
     const scanner = new Html5Qrcode(qrcodeRegionId, false);
     scannerRef.current = scanner;
 
@@ -25,25 +34,33 @@ export function QrScanner({ onScanSuccess, onScanFailure }: QrScannerProps) {
     const successCallback = (text: string, result: any) => {
       if (!hasScannedRef.current) {
         hasScannedRef.current = true;
-        onScanSuccess(text, result);
+        // Call the latest callback via the ref.
+        onScanSuccessRef.current(text, result);
       }
     };
 
     const failureCallback = (err: string) => {
-      if (onScanFailure) {
-        onScanFailure(err);
+      if (onScanFailureRef.current) {
+        // Call the latest callback via the ref.
+        onScanFailureRef.current(err);
       }
     };
 
     const startScanner = async () => {
+      // Ensure the DOM element is available before starting the scanner.
+      // This is generally true since useEffect runs after render, but this check adds robustness.
+      if (!document.getElementById(qrcodeRegionId)) {
+        console.error("QR scanner DOM element not found.");
+        return;
+      }
       try {
         const cameras = await Html5Qrcode.getCameras();
         if (cameras && cameras.length > 0) {
           const backCamera = cameras.find(c => c.label.toLowerCase().includes('back'));
           const cameraId = backCamera ? backCamera.id : cameras[0].id;
 
-          if (scanner.getState() === Html5QrcodeScannerState.NOT_STARTED) {
-            await scanner.start(cameraId, config, successCallback, failureCallback);
+          if (scannerRef.current && scannerRef.current.getState() === Html5QrcodeScannerState.NOT_STARTED) {
+            await scannerRef.current.start(cameraId, config, successCallback, failureCallback);
             setError(null);
           }
         } else {
@@ -58,15 +75,18 @@ export function QrScanner({ onScanSuccess, onScanFailure }: QrScannerProps) {
     startScanner();
 
     return () => {
+      // Cleanup function to stop the scanner when the component unmounts.
       if (scannerRef.current?.isScanning) {
         scannerRef.current.stop().catch(err => {
+          // It's common for stop() to throw an error if the scanner is already stopped or in a weird state.
+          // We can often safely ignore this during cleanup.
           if (err.name !== 'NotScanningError') {
             console.warn("Échec de l'arrêt du scanner lors du nettoyage:", err);
           }
         });
       }
     };
-  }, [onScanSuccess, onScanFailure]);
+  }, []); // <-- Empty dependency array is the key to the fix. It ensures the effect runs only once.
 
   return (
     <div className={cn("w-full max-w-lg mx-auto aspect-square rounded-lg border-4 border-dashed border-primary/50 bg-secondary/50 overflow-hidden relative flex items-center justify-center")}>
