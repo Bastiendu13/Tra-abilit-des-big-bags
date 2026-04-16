@@ -1,0 +1,155 @@
+/**
+ * Core Philosophy: This ruleset implements a dual security model based on strict
+ * user ownership and role-based access control (RBAC) for administrative functions.
+ * Standard users have complete control over their own data tree (profiles and scanned
+ * items), while 'admin' users are granted read-only access to global data sets like
+ * user profiles for oversight and management.
+ *
+ * Data Structure: The data is organized into two primary top-level collections:
+ * 1. /userProfiles/{userId}: Stores individual user data, critically including a
+ *    'role' field for authorization decisions.
+ * 2. /users/{userId}/...: A user-scoped collection where each user's private data,
+ *    such as scanned items, is stored in a dedicated subcollection. This path-based
+ *    ownership model ensures query performance and security.
+ *
+ * Key Security Decisions:
+ * - Admin Access is Read-Only: Users with the 'admin' role can list and read all user
+ *   profiles but cannot modify or delete them. This follows the principle of least
+ *   privilege, granting admins necessary visibility without write permissions.
+ * - User Data is Private: All data within a /users/{userId} path is strictly private
+ *   to that user. No other user, including admins, can access this data.
+ * - No User Listing for Non-Admins: Regular users are prohibited from listing the
+ *   /userProfiles collection to protect user privacy.
+ * - Relational Integrity is Enforced: On creation, documents must contain an internal
+ *   ID field that matches the authenticated user's ID and the document's path, ensuring
+ *   data consistency and preventing ownership spoofing.
+ *
+ * Denormalization for Authorization:
+ * - The 'role' field is denormalized directly onto each UserProfile document. This allows
+ *   an efficient `isAdmin()` check using a single `get()` on the requesting user's own
+ *   profile, avoiding slow and costly lookups during rule evaluation.
+ * - The `scannerUserId` is denormalized onto each ScannedItem document. This makes
+ *   ownership validation instantaneous within the `/users/{userId}/scannedItems`
+ *   subcollection without needing to reference parent documents.
+ *
+ * Structural Segregation:
+ * - User-specific, private data (`scannedItems`) is segregated into a nested subcollection
+ *   under `/users/{userId}`.
+ * - Globally relevant data (`userProfiles`) resides in a separate top-level collection,
+ *   allowing for different, broader access rules (e.g., admin listing) to be applied
+ *   without compromising the security of private user subcollections.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helper Functions
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns true if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Returns true if the authenticated user's UID matches the provided userId.
+     * This is the foundation of the user-ownership model.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Returns true if the user owns the existing resource.
+     * Combines ownership check with an existence check for update/delete safety.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user has the 'admin' role.
+     * Performs a direct lookup on the user's own profile document.
+     * This is a performant and secure way to implement role-based access.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    /**
+     * Validates that the UserProfile being created has its internal 'id' field
+     * correctly set to match the document's ID, ensuring relational integrity.
+     */
+    function hasValidUserProfileDataOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Enforces immutability for the UserProfile's 'id' field during updates,
+     * preventing ownership or identity from being changed after creation.
+     */
+    function hasImmutableUserProfileDataOnUpdate() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates that the ScannedItem being created has its internal 'scannerUserId'
+     * field correctly set to the creator's UID.
+     */
+    function hasValidScannedItemDataOnCreate() {
+      return request.resource.data.scannerUserId == request.auth.uid;
+    }
+
+    /**
+     * Enforces immutability for the ScannedItem's 'scannerUserId' field
+     * during updates, preventing the item's owner from being changed.
+     */
+    function hasImmutableScannedItemDataOnUpdate() {
+      return request.resource.data.scannerUserId == resource.data.scannerUserId;
+    }
+
+
+    // -------------------------------------------------------------------------
+    // Collection Rules
+    // -------------------------------------------------------------------------
+
+    /**
+     * @description Manages user profiles. Users can manage their own profile,
+     * while admins have read-only access to all profiles.
+     * @path /userProfiles/{userId}
+     * @allow (get) An admin reading another user's profile.
+     * @allow (create) A new user creating their own profile document.
+     * @deny (list) A non-admin attempting to list all user profiles.
+     * @deny (update) A user attempting to modify another user's profile.
+     * @principle Enforces document ownership for writes and role-based access for reads.
+     */
+    match /userProfiles/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && hasValidUserProfileDataOnCreate(userId);
+      allow update: if isExistingOwner(userId) && hasImmutableUserProfileDataOnUpdate();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages scanned items, which are private to each user.
+     * All operations are restricted to the owner of the data tree.
+     * @path /users/{userId}/scannedItems/{scannedItemId}
+     * @allow (create) An authenticated user creating a scanned item in their own subcollection.
+     * @allow (list) An authenticated user listing all of their own scanned items.
+     * @deny (get) A user attempting to read a scanned item belonging to another user.
+     * @deny (delete) An admin attempting to delete a user's scanned item.
+     * @principle Restricts access to a user's own private data tree via path-based security.
+     */
+    match /users/{userId}/scannedItems/{scannedItemId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidScannedItemDataOnCreate();
+      allow update: if isExistingOwner(userId) && hasImmutableScannedItemDataOnUpdate();
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

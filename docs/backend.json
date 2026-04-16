@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile within the TraceFacile application, including their role and basic identification information. This entity stores additional user data linked to an external authentication system (Firebase Auth).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity. This typically corresponds to the user's ID from the external authentication system (e.g., Firebase Auth UID)."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address, used for authentication and identification.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The role assigned to the user within the application, determining their access permissions (e.g., 'admin', 'operator')."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "role",
+        "createdAt"
+      ]
+    },
+    "ScannedItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ScannedItem",
+      "type": "object",
+      "description": "Represents a single QR code scan, storing its content, scan details, and AI-suggested traceability information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ScannedItem entity."
+        },
+        "qrCodeContent": {
+          "type": "string",
+          "description": "The raw data or content extracted directly from the scanned QR code."
+        },
+        "scanTimestamp": {
+          "type": "string",
+          "description": "The exact date and time when the QR code was scanned.",
+          "format": "date-time"
+        },
+        "scannerUserId": {
+          "type": "string",
+          "description": "Reference to the UserProfile who performed this scan. (Relationship: UserProfile 1:N ScannedItem)"
+        },
+        "suggestedCategory": {
+          "type": "string",
+          "description": "An AI-generated suggestion for the category of the product or item based on the QR code content."
+        },
+        "suggestedOrigin": {
+          "type": "string",
+          "description": "An AI-generated suggestion for the origin of the product or item (e.g., country, region, manufacturer)."
+        },
+        "suggestedNextSteps": {
+          "type": "string",
+          "description": "AI-generated suggestions for potential next steps in the traceability chain or related actions."
+        }
+      },
+      "required": [
+        "id",
+        "qrCodeContent",
+        "scanTimestamp",
+        "scannerUserId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/userProfiles/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profiles, identified by their Firebase Authentication UID. Each document contains essential user information, including the 'role' field, which is critical for defining user permissions ('admin' or 'operator'). This field is denormalized for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier (Firebase Auth UID) of the user whose profile is stored."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/scannedItems/{scannedItemId}",
+        "definition": {
+          "entityName": "ScannedItem",
+          "schema": {
+            "$ref": "#/backend/entities/ScannedItem"
+          },
+          "description": "A subcollection for each user, storing individual QR code scan records. Each document represents a 'ScannedItem' and includes the 'scannerUserId' field, which explicitly links it to the owner and is denormalized to ensure authorization independence. This path structure provides clear ownership for QAP-compliant list operations.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier (Firebase Auth UID) of the user who performed the scan and owns this collection of scanned items."
+            },
+            {
+              "name": "scannedItemId",
+              "description": "The unique identifier for a specific scanned item record."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure is designed to be secure, scalable, and easily debuggable, adhering strictly to the provided core design principles and strategy mandates. It primarily utilizes a combination of top-level collections for global entities and user-specific subcollections for private, user-owned data.\n\n**Authorization Independence (CRITICAL):**\n\n1.  **User Profiles (`/userProfiles/{userId}`):** The `role` field (e.g., 'admin', 'operator') is stored directly within each `UserProfile` document. This is crucial for Authorization Independence. When a user authenticates, their profile is retrieved from `/userProfiles/request.auth.uid`. The `role` can then be checked directly from this document, eliminating any need for Firestore security rules to perform `get()` calls to other documents to determine the user's role. This ensures atomic authorization checks for a user's role.\n2.  **Scanned Items (`/users/{userId}/scannedItems/{scannedItemId}`):** The `scannerUserId` is explicitly included as a field within each `ScannedItem` document and is also part of the document's path (`{userId}`). This denormalization means that to determine ownership or apply ownership-based rules, the rules engine does not need to perform `get()` operations on a parent document (e.g., a 'User' document) to find the owner. All necessary authorization context for a `ScannedItem` is either in its own document or its direct path, enabling atomic operations (like creating a scanned item) and simplifying security rules significantly.\n\n**Queryable by Authenticated Principal (QAPs - Rules are not Filters):**\n\n1.  **User Profiles (`/userProfiles/{userId}`):** For a logged-in user, retrieving their own profile is a simple, QAP-compliant `get` operation: `db.collection('userProfiles').doc(request.auth.uid).get()`. Firestore rules can easily enforce `allow read: if request.auth.uid == userId;`. Listing all user profiles would typically be restricted to 'admin' roles, requiring a specific rule (e.g., `allow list: if get(/userProfiles/$(request.auth.uid)).data.role == 'admin';`), which is also QAP-compliant as it's a direct role check on the requester's known profile.\n2.  **Scanned Items (`/users/{userId}/scannedItems/{scannedItemId}`):** This hierarchical path structure inherently supports QAP-compliant list operations for user-owned data. An authenticated user can easily `list` all their own scanned items by querying `db.collection('users').doc(request.auth.uid).collection('scannedItems').get()`. Firestore security rules can then enforce `allow read, create, update, delete: if request.auth.uid == userId;` ensuring that users can only access their own data, and these rules are highly efficient and QAP-compliant because the `userId` is part of the path.\n\n**Structural Segregation & Access Modeling:**\n\n*   **`/userProfiles/{userId}`:** Represents private user data. Each document holds a single user's profile, including their essential `role` for access control. This collection has a consistent security posture: primarily readable by the owner, with potential admin read access. This adheres to DBAC principles by storing roles in the database.\n*   **`/users/{userId}/scannedItems/{scannedItemId}`:** This subcollection holds all `ScannedItem` entities associated with a specific user. This structure establishes clear path-based ownership, making security rules straightforward: only the owner (`{userId}`) can read, create, update, or delete their own `ScannedItem` documents. This maintains strong segregation and consistency for user-specific data."
+  }
+}
