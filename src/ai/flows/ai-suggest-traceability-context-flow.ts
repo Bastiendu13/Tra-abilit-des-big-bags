@@ -14,7 +14,7 @@ const AISuggestTraceabilityContextInputSchema = z.object({
   qrCodeData: z
     .string()
     .describe(
-      'The raw data extracted from a scanned QR code. This data will be analyzed by the AI to provide context.'
+      "Les données brutes extraites d'un code QR scanné. Ces données seront analysées par l'IA pour fournir un contexte."
     ),
 });
 export type AISuggestTraceabilityContextInput = z.infer<
@@ -24,19 +24,19 @@ export type AISuggestTraceabilityContextInput = z.infer<
 const AISuggestTraceabilityContextOutputSchema = z.object({
   productCategories: z
     .array(z.string())
-    .describe('Suggested product categories based on the QR code data.'),
+    .describe('Catégories de produits suggérées en fonction des données du code QR.'),
   originInformation: z
     .array(z.string())
-    .describe('Information related to the origin of the product or data.'),
+    .describe("Informations relatives à l'origine du produit ou des données."),
   nextSteps: z
     .array(z.string())
     .describe(
-      'Possible next steps in the traceability process or actions to take.'
+      'Étapes suivantes possibles dans le processus de traçabilité ou actions à entreprendre.'
     ),
   summary: z
     .string()
     .describe(
-      'A concise summary of the traceability context provided by the AI.'
+      "Un résumé concis du contexte de traçabilité fourni par l'IA."
     ),
 });
 export type AISuggestTraceabilityContextOutput = z.infer<
@@ -53,18 +53,18 @@ const traceabilityPrompt = ai.definePrompt({
   name: 'traceabilityPrompt',
   input: {schema: AISuggestTraceabilityContextInputSchema},
   output: {schema: AISuggestTraceabilityContextOutputSchema},
-  prompt: `You are an expert in supply chain traceability and data analysis.
-Your task is to analyze the provided QR code data and extract relevant traceability context.
+  prompt: `Vous êtes un expert en traçabilité de la chaîne d'approvisionnement et en analyse de données.
+Votre tâche est d'analyser les données du code QR fournies et d'en extraire le contexte de traçabilité pertinent.
 
-Based on the QR code data, suggest:
-1.  Pertinent product categories.
-2.  Information about the origin (e.g., country, region, manufacturer, supplier).
-3.  Possible next steps in the traceability process or actions the user might take with this item.
-4.  A concise summary of the overall traceability context.
+En fonction des données du code QR, suggérez :
+1.  Des catégories de produits pertinentes.
+2.  Des informations sur l'origine (par exemple, pays, région, fabricant, fournisseur).
+3.  Les prochaines étapes possibles dans le processus de traçabilité ou les actions que l'utilisateur pourrait entreprendre avec cet article.
+4.  Un résumé concis du contexte global de traçabilité.
 
-Ensure your output is structured precisely according to the JSON schema provided.
+Assurez-vous que votre sortie est structurée précisément selon le schéma JSON fourni.
 
-QR Code Data: {{{qrCodeData}}}`,
+Données du code QR : {{{qrCodeData}}}`,
 });
 
 const aiSuggestTraceabilityContextFlow = ai.defineFlow(
@@ -76,7 +76,7 @@ const aiSuggestTraceabilityContextFlow = ai.defineFlow(
   async input => {
     const {output} = await traceabilityPrompt(input);
     if (!output) {
-      throw new Error('Failed to get traceability context from AI.');
+      throw new Error("Failed to get traceability context from AI.");
     }
     return output;
   }
