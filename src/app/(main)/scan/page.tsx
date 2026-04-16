@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { QrScanner } from '@/components/qr-scanner';
 import { ScanResultDialog } from '@/components/scan-result-dialog';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,11 @@ export default function ScanPage() {
   const [showScanner, setShowScanner] = useState(true);
   const [scannerKey, setScannerKey] = useState(Date.now()); // Key to force re-mounting QrScanner
   const [errorDialog, setErrorDialog] = useState<{ title: string; description: string } | null>(null);
+
+  const assignmentBasedOnSml = useMemo(() => {
+    if (!productQr) return null;
+    return activeAssignments.find(a => productQr.includes(a.sml)) || null;
+  }, [productQr, activeAssignments]);
 
   useEffect(() => {
     if (profileLoaded && !profile) {
@@ -86,22 +91,23 @@ export default function ScanPage() {
       };
 
       // First, try to find an assignment based on SML in the product QR
-      const assignmentBasedOnSml = productQr 
+      // We can re-use the memoized value, but it's cheap to re-calculate here.
+      const currentAssignmentBasedOnSml = productQr 
           ? activeAssignments.find(a => productQr.includes(a.sml))
           : undefined;
 
-      if (assignmentBasedOnSml) {
+      if (currentAssignmentBasedOnSml) {
           // A specific SML was found in the product. The hopper MUST match.
-          if (decodedText === assignmentBasedOnSml.tremie) {
+          if (decodedText === currentAssignmentBasedOnSml.tremie) {
               // SUCCESS: SML detected and correct hopper scanned.
               setShowScanner(false);
               setHopperQr(decodedText);
-              setMatchingAssignment(assignmentBasedOnSml);
+              setMatchingAssignment(currentAssignmentBasedOnSml);
           } else {
               // ERROR: SML detected but WRONG hopper scanned.
               setErrorDialog({
                   title: "Affectation incorrecte",
-                  description: `Pour le produit contenant "${assignmentBasedOnSml.sml}", la trémie attendue est "${assignmentBasedOnSml.tremie}". Vous avez scanné "${decodedText}".`,
+                  description: `Pour le produit contenant "${currentAssignmentBasedOnSml.sml}", la trémie attendue est "${currentAssignmentBasedOnSml.tremie}". Vous avez scanné "${decodedText}".`,
               });
               setScannerKey(Date.now());
           }
@@ -185,6 +191,10 @@ export default function ScanPage() {
     if (scanStep === 'product_scanned') {
       return `Le produit a bien été identifié.`;
     }
+    // This is for scanStep === 'hopper'
+    if (assignmentBasedOnSml) {
+      return `Veuillez scanner le code QR de la trémie "${assignmentBasedOnSml.tremie}".`;
+    }
     return `Scannez la trémie correspondante pour l'une des sessions actives : ${activeAssignmentsText}.`;
   };
   
@@ -217,7 +227,10 @@ export default function ScanPage() {
                 <ArrowRight className="h-4 w-4" />
                 <AlertTitle>Action requise</AlertTitle>
                 <AlertDescription>
-                   Ce produit doit aller dans une trémie d'une session active : {activeAssignmentsText}.
+                   {assignmentBasedOnSml
+                       ? `Ce produit doit aller dans la trémie : ${assignmentBasedOnSml.tremie}.`
+                       : `Ce produit doit aller dans une trémie d'une session active : ${activeAssignmentsText}.`
+                   }
                 </AlertDescription>
             </Alert>
             
