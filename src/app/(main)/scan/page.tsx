@@ -85,42 +85,46 @@ export default function ScanPage() {
         return;
       };
 
-      // Check if the product QR code contains a known SML from active assignments.
-      const detectedSmlAssignment = productQr ? activeAssignments.find(a => productQr.includes(a.sml)) : undefined;
+      // First, try to find an assignment based on SML in the product QR
+      const assignmentBasedOnSml = productQr 
+          ? activeAssignments.find(a => productQr.includes(a.sml))
+          : undefined;
 
-      let finalMatchingAssignment: Assignment | undefined;
+      if (assignmentBasedOnSml) {
+          // A specific SML was found in the product. The hopper MUST match.
+          if (decodedText === assignmentBasedOnSml.tremie) {
+              // SUCCESS: SML detected and correct hopper scanned.
+              setShowScanner(false);
+              setHopperQr(decodedText);
+              setMatchingAssignment(assignmentBasedOnSml);
+          } else {
+              // ERROR: SML detected but WRONG hopper scanned.
+              setErrorDialog({
+                  title: "Affectation incorrecte",
+                  description: `Pour le produit contenant "${assignmentBasedOnSml.sml}", la trémie attendue est "${assignmentBasedOnSml.tremie}". Vous avez scanné "${decodedText}".`,
+              });
+              setScannerKey(Date.now());
+          }
+          return; // This branch is completely handled, so we exit.
+      }
 
-      if (detectedSmlAssignment) {
-        // An SML was detected in the product QR. We must match the specific hopper.
-        if (decodedText === detectedSmlAssignment.tremie) {
-          finalMatchingAssignment = detectedSmlAssignment;
-        }
-        // If not, finalMatchingAssignment remains undefined, triggering the error below.
+      // If we're here, it means no specific SML was found in the product QR.
+      // Now, we just check if the scanned hopper matches ANY active assignment.
+      const anyMatchingAssignment = activeAssignments.find(a => a.tremie === decodedText);
+
+      if (anyMatchingAssignment) {
+          // SUCCESS: No SML in product, but hopper matches an active session.
+          setShowScanner(false);
+          setHopperQr(decodedText);
+          setMatchingAssignment(anyMatchingAssignment);
       } else {
-        // No specific SML was found in the product QR. Any active hopper is acceptable.
-        finalMatchingAssignment = activeAssignments.find(a => a.tremie === decodedText);
+          // ERROR: Hopper does not match any active session.
+          setErrorDialog({
+              title: "Affectation incorrecte",
+              description: `La trémie scannée ("${decodedText}") n'est pas valide pour les sessions actives. Veuillez scanner l'une des trémies configurées : ${activeAssignments.map(a => a.tremie).join(', ')}.`,
+          });
+          setScannerKey(Date.now());
       }
-
-      if (!finalMatchingAssignment) {
-        let description = `La trémie scannée ("${decodedText}") n'est pas valide pour les sessions actives. Veuillez scanner l'une des trémies configurées : ${activeAssignments.map(a => a.tremie).join(', ')}.`;
-        
-        if (detectedSmlAssignment) {
-          // If we expected a specific hopper, provide a more precise error message.
-          description = `Pour le produit contenant "${detectedSmlAssignment.sml}", la trémie attendue est "${detectedSmlAssignment.tremie}". Vous avez scanné "${decodedText}".`;
-        }
-
-        setErrorDialog({
-          title: "Affectation incorrecte",
-          description: description,
-        });
-        setScannerKey(Date.now());
-        return;
-      }
-      
-      // On success for hopper, hide scanner and set QR
-      setShowScanner(false);
-      setHopperQr(decodedText);
-      setMatchingAssignment(finalMatchingAssignment);
     }
   };
   
