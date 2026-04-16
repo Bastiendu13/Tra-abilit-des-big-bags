@@ -86,11 +86,28 @@ export default function ScanPage() {
         return;
       };
 
-      const matching = activeAssignments.find(a => a.tremie === decodedText);
+      const isProductAnSml = productQr ? activeAssignments.some(a => a.sml === productQr) : false;
+      let matching: Assignment | undefined | null = null;
+      
+      if (isProductAnSml && productQr) {
+        matching = activeAssignments.find(a => a.sml === productQr && a.tremie === decodedText);
+      } else {
+        matching = activeAssignments.find(a => a.tremie === decodedText);
+      }
+
       if (!matching) {
+        let description = `La trémie scannée ("${decodedText}") n'est pas valide pour les sessions actives. Veuillez scanner l'une des trémies configurées : ${activeAssignments.map(a => `${a.sml} / ${a.tremie}`).join(' | ')}.`;
+        
+        if (isProductAnSml && productQr) {
+            const expectedAssignment = activeAssignments.find(a => a.sml === productQr);
+            if (expectedAssignment) {
+                description = `Pour le SML "${productQr}", la trémie attendue est "${expectedAssignment.tremie}". Vous avez scanné "${decodedText}".`;
+            }
+        }
+
         setErrorDialog({
-          title: "Mauvaise trémie scannée",
-          description: `La trémie scannée ("${decodedText}") n'est pas valide pour les sessions actives. Veuillez scanner l'une des trémies configurées : ${activeAssignments.map(a => `${a.sml} / ${a.tremie}`).join(' | ')}.`,
+          title: "Affectation incorrecte",
+          description: description,
         });
         setScannerKey(Date.now());
         return;
