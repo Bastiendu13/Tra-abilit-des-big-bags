@@ -222,11 +222,10 @@ export default function ScanPage() {
                 <ArrowRight className="h-4 w-4" />
                 <AlertTitle>Action requise</AlertTitle>
                 <AlertDescription>
-                   {`Ce produit doit aller dans une trémie d'une session active : ${
-                       assignmentBasedOnSml 
-                       ? `${assignmentBasedOnSml.sml} / ${assignmentBasedOnSml.tremie}` 
-                       : activeAssignmentsText
-                   }.`}
+                   {assignmentBasedOnSml
+                       ? "Ce produit doit aller dans la trémie associée au SML scanné."
+                       : `Ce produit doit aller dans une trémie d'une session active : ${activeAssignmentsText}.`
+                   }
                 </AlertDescription>
             </Alert>
             
