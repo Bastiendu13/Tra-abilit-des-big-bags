@@ -46,46 +46,49 @@ export default function ScanPage() {
   }, [profileLoaded, configLoaded, profile, activeAssignments, router]);
 
   const handleScanSuccess = (decodedText: string) => {
-    let assignment: Assignment | null | undefined = undefined;
-
-    // This case is already handled by the redirect, but it's a good safeguard.
     if (activeAssignments.length === 0) {
-        setErrorDialog({
-            title: "Aucune session active",
-            description: "Veuillez demander à un administrateur d'activer une session de scan.",
-        });
-        setScannerKey(Date.now());
-        return;
+      setErrorDialog({
+        title: "Aucune session active",
+        description: "Veuillez demander à un administrateur d'activer une session de scan.",
+      });
+      setScannerKey(Date.now());
+      return;
     }
 
-    if (activeAssignments.length === 1) {
-        // If there's only one active session, we associate any scan with it, assuming it's a product for that session.
-        assignment = activeAssignments[0];
-    } else {
-        // If multiple sessions are active, we must find the SML in the QR code to disambiguate.
-        const normalizedDecodedText = decodedText.toUpperCase();
-        assignment = activeAssignments.find(a => {
-            const smlPattern = a.sml.toUpperCase();
-            const smlParts = smlPattern.match(/([A-Z]+)(\d+)/);
-            if (!smlParts) {
-                return normalizedDecodedText.includes(smlPattern);
-            }
-            const prefix = smlParts[1];
-            const number = smlParts[2];
-            const regex = new RegExp(`\\b${prefix}[-_\\s]?${number}\\b`);
-            return regex.test(normalizedDecodedText);
-        });
+    // Parse the QR code in "key=value;key=value" format
+    const qrData: { [key: string]: string } = decodedText
+      .split(';')
+      .map(part => part.split('='))
+      .reduce((acc, [key, value]) => {
+        if (key && value) {
+          acc[key.trim().toUpperCase()] = value.trim();
+        }
+        return acc;
+      }, {} as { [key: string]: string });
+
+    const extractedSml = qrData['SML'];
+
+    if (!extractedSml) {
+      setErrorDialog({
+        title: "Format de QR code invalide",
+        description: "Le code QR scanné ne contient pas d'identifiant SML au format attendu (ex: SML=SML3).",
+      });
+      setScannerKey(Date.now());
+      return;
     }
+
+    const assignment = activeAssignments.find(
+      a => a.sml.toUpperCase() === extractedSml.toUpperCase()
+    );
 
     if (assignment) {
       setMatchingAssignment(assignment);
       setShowScanner(false);
       setIsDialogOpen(true);
     } else {
-      // This is reached if multiple sessions are active and the QR code doesn't match any of them.
       setErrorDialog({
-        title: "SML non identifiable",
-        description: "Plusieurs sessions sont actives et le SML n'a pas pu être identifié dans le code QR. Veuillez scanner un code contenant l'identifiant SML.",
+        title: "SML non configuré",
+        description: `La SML "${extractedSml}" scannée ne correspond à aucune session active. Veuillez vérifier la configuration.`,
       });
       setScannerKey(Date.now());
     }
