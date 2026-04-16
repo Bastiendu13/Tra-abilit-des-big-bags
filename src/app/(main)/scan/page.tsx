@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -13,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Settings, XCircle, Info, Loader2 } from 'lucide-react';
+import { Settings, XCircle, Info, Loader2, Package } from 'lucide-react';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useSessionConfig, type Assignment } from '@/hooks/use-session-config';
 import { useRouter } from 'next/navigation';
@@ -36,6 +35,7 @@ export default function ScanPage() {
   const [showScanner, setShowScanner] = useState(true);
   const [scannerKey, setScannerKey] = useState(Date.now());
   const [errorDialog, setErrorDialog] = useState<{ title: string; description: string } | null>(null);
+  const [showHopperInfoDialog, setShowHopperInfoDialog] = useState(false);
 
   useEffect(() => {
     if (profileLoaded && !profile) {
@@ -55,6 +55,7 @@ export default function ScanPage() {
 
   const handleScanSuccess = (decodedText: string) => {
     if (scanStep === 'product') {
+      // Logic to extract SML from 'key=value;' string
       const qrData: { [key: string]: string } = decodedText
         .split(';')
         .map(part => part.split('='))
@@ -66,7 +67,7 @@ export default function ScanPage() {
         }, {} as { [key: string]: string });
 
       const extractedSml = qrData['SML'];
-      
+
       if (!extractedSml) {
         setErrorDialog({
           title: "Format de QR code invalide",
@@ -75,7 +76,7 @@ export default function ScanPage() {
         setScannerKey(Date.now());
         return;
       }
-
+      
       const assignment = activeAssignments.find(
         a => a.sml.toUpperCase() === extractedSml.toUpperCase()
       );
@@ -83,8 +84,8 @@ export default function ScanPage() {
       if (assignment) {
         setMatchingAssignment(assignment);
         setProductQrData(decodedText);
-        setScanStep('hopper');
-        setScannerKey(Date.now()); // Reset scanner for next step
+        setShowScanner(false); // Hide scanner
+        setShowHopperInfoDialog(true); // Show info dialog
       } else {
         setErrorDialog({
           title: "SML non configurée",
@@ -197,6 +198,32 @@ export default function ScanPage() {
             <Loader2 className="h-8 w-8 animate-spin" />
             <p>Enregistrement du scan...</p>
         </div>
+      )}
+
+      {showHopperInfoDialog && matchingAssignment && (
+        <AlertDialog open={showHopperInfoDialog} onOpenChange={setShowHopperInfoDialog}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2 text-2xl">
+                        <Package className="h-8 w-8 text-primary"/>
+                        Déposer le produit dans la trémie
+                    </AlertDialogTitle>
+                </AlertDialogHeader>
+                <div className="py-4 text-center">
+                    <p className="text-7xl font-bold text-primary">{matchingAssignment.tremie}</p>
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => {
+                        setShowHopperInfoDialog(false);
+                        setScanStep('hopper');
+                        setShowScanner(true);
+                        setScannerKey(Date.now());
+                    }} className="w-full">
+                        OK
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       )}
 
       {isDialogOpen && matchingAssignment && (
