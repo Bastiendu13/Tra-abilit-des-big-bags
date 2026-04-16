@@ -56,11 +56,15 @@ const traceabilityPrompt = ai.definePrompt({
   prompt: `Vous êtes un expert en traçabilité de la chaîne d'approvisionnement et en analyse de données.
 Votre tâche est d'analyser les données du code QR fournies et d'en extraire le contexte de traçabilité pertinent.
 
+Les données sont au format "clé=valeur" séparées par des points-virgules. Les clés possibles incluent FAB (fabricant), SML (type de produit), DATE, et LOT.
+
 En fonction des données du code QR, suggérez :
-1.  Des catégories de produits pertinentes.
-2.  Des informations sur l'origine (par exemple, pays, région, fabricant, fournisseur).
-3.  Les prochaines étapes possibles dans le processus de traçabilité ou les actions que l'utilisateur pourrait entreprendre avec cet article.
-4.  Un résumé concis du contexte global de traçabilité.
+1.  Des catégories de produits pertinentes (par exemple, "Produit industriel", "Matériau réfractaire").
+2.  Des informations sur l'origine (utilisez la valeur de FAB comme fabricant).
+3.  Les prochaines étapes possibles dans le processus de traçabilité (par exemple, "Stocker le produit", "Vérifier la fiche de sécurité").
+4.  Un résumé concis du contexte global de traçabilité, en incluant le type de produit (SML) et le fabricant (FAB).
+
+Si certaines informations ne peuvent pas être déduites, retournez un tableau vide ou une chaîne de caractères vide pour le champ correspondant, mais assurez-vous que la sortie est toujours un JSON valide respectant le schéma.
 
 Assurez-vous que votre sortie est structurée précisément selon le schéma JSON fourni.
 
@@ -76,7 +80,7 @@ const aiSuggestTraceabilityContextFlow = ai.defineFlow(
   async input => {
     const {output} = await traceabilityPrompt(input);
     if (!output) {
-      throw new Error("Failed to get traceability context from AI.");
+      throw new Error('Failed to get traceability context from AI.');
     }
     return output;
   }
