@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { QrCode, ArrowRight, Settings, XCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useSessionConfig, type Assignment } from '@/hooks/use-session-config';
 import { useRouter } from 'next/navigation';
@@ -218,20 +218,28 @@ export default function ScanPage() {
                 </CardContent>
             </Card>
 
-            <Alert>
-                <ArrowRight className="h-4 w-4" />
-                <AlertTitle>Action requise</AlertTitle>
-                <AlertDescription>
-                   {assignmentBasedOnSml
-                       ? "Ce produit doit aller dans la trémie associée au SML scanné."
-                       : `Ce produit doit aller dans une trémie d'une session active : ${activeAssignmentsText}.`
-                   }
-                </AlertDescription>
-            </Alert>
+            {assignmentBasedOnSml ? (
+                <Card className="bg-accent/10 border-accent text-center">
+                    <CardHeader>
+                        <CardDescription>Ce produit est associé au</CardDescription>
+                        <CardTitle className="text-4xl font-bold text-primary">{assignmentBasedOnSml.sml}</CardTitle>
+                        <p className="text-lg pt-4">Veuillez le placer dans la trémie :</p>
+                        <p className="text-4xl font-bold text-primary">{assignmentBasedOnSml.tremie}</p>
+                    </CardHeader>
+                </Card>
+            ) : (
+                <Alert>
+                    <ArrowRight className="h-4 w-4" />
+                    <AlertTitle>Action requise</AlertTitle>
+                    <AlertDescription>
+                       {`Ce produit doit aller dans une trémie d'une session active : ${activeAssignmentsText}.`}
+                    </AlertDescription>
+                </Alert>
+            )}
             
             <Button onClick={handleStartHopperScan} className="w-full" size="lg">
                 <QrCode className="mr-2 h-5 w-5" />
-                Scan trémie
+                 {assignmentBasedOnSml ? `Scanner la ${assignmentBasedOnSml.tremie}` : 'Scanner la trémie'}
             </Button>
         </div>
       )}
