@@ -56,10 +56,9 @@ export function SessionConfigProvider({ children }: { children: ReactNode }) {
     setIsLoaded(true);
   }, []);
 
-  const updateConfig = (newConfig: SessionConfig) => {
+  const persistConfig = (newConfig: SessionConfig) => {
      try {
       localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
-      setConfig(newConfig);
     } catch (error) {
       console.error("Failed to save session config to localStorage", error);
     }
@@ -69,7 +68,7 @@ export function SessionConfigProvider({ children }: { children: ReactNode }) {
     setConfig(prevConfig => {
       const newAssignment: Assignment = { id: new Date().getTime().toString(), sml, tremie };
       const newConfig = { ...prevConfig, assignments: [...prevConfig.assignments, newAssignment] };
-      updateConfig(newConfig);
+      persistConfig(newConfig);
       return newConfig;
     });
   }, []);
@@ -79,7 +78,7 @@ export function SessionConfigProvider({ children }: { children: ReactNode }) {
       const newAssignments = prevConfig.assignments.filter(a => a.id !== assignmentId);
       const newActiveIds = prevConfig.activeAssignmentIds.filter(id => id !== assignmentId);
       const newConfig = { assignments: newAssignments, activeAssignmentIds: newActiveIds };
-      updateConfig(newConfig);
+      persistConfig(newConfig);
       return newConfig;
     });
   }, []);
@@ -88,7 +87,7 @@ export function SessionConfigProvider({ children }: { children: ReactNode }) {
     setConfig(prevConfig => {
       if (prevConfig.activeAssignmentIds.includes(assignmentId)) return prevConfig;
       const newConfig = { ...prevConfig, activeAssignmentIds: [...prevConfig.activeAssignmentIds, assignmentId] };
-      updateConfig(newConfig);
+      persistConfig(newConfig);
       return newConfig;
     });
   }, []);
@@ -98,7 +97,7 @@ export function SessionConfigProvider({ children }: { children: ReactNode }) {
       const newActiveIds = prevConfig.activeAssignmentIds.filter(id => id !== assignmentId);
       if (newActiveIds.length === prevConfig.activeAssignmentIds.length) return prevConfig;
       const newConfig = { ...prevConfig, activeAssignmentIds: newActiveIds };
-      updateConfig(newConfig);
+      persistConfig(newConfig);
       return newConfig;
     });
   }, []);
