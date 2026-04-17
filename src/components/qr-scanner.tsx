@@ -69,7 +69,8 @@ export function QrScanner({ onScanSuccess, onScanFailure }: QrScannerProps) {
       } catch (err: any) {
         // This specific error is a race condition from the library during fast remounts.
         // We can safely ignore it as a new scanner instance will take over.
-        if (err?.message?.includes("Cannot transition to a new state")) {
+        const errorMessage = (typeof err === 'string' ? err : err?.message) || '';
+        if (errorMessage.includes("Cannot transition to a new state")) {
             console.warn("Caught a benign scanner transition error on remount.");
         } else {
             console.error("Erreur de démarrage de la caméra:", err);
