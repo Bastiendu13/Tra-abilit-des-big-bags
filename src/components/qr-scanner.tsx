@@ -67,8 +67,14 @@ export function QrScanner({ onScanSuccess, onScanFailure }: QrScannerProps) {
           setError("Aucune caméra trouvée sur cet appareil.");
         }
       } catch (err: any) {
-        console.error("Erreur de démarrage de la caméra:", err);
-        setError("Impossible d'accéder à la caméra. Veuillez vérifier les autorisations de votre navigateur.");
+        // This specific error is a race condition from the library during fast remounts.
+        // We can safely ignore it as a new scanner instance will take over.
+        if (err?.message?.includes("Cannot transition to a new state")) {
+            console.warn("Caught a benign scanner transition error on remount.");
+        } else {
+            console.error("Erreur de démarrage de la caméra:", err);
+            setError("Impossible d'accéder à la caméra. Veuillez vérifier les autorisations de votre navigateur.");
+        }
       }
     };
 
