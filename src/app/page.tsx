@@ -3,13 +3,14 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUserProfile } from "@/hooks/use-user-profile";
-import { Loader2, Package } from "lucide-react";
+import { Loader2, Package, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 export default function Home() {
   const router = useRouter();
-  const { profile, isLoaded } = useUserProfile();
+  const { profile, isLoaded, setProfile } = useUserProfile();
 
   useEffect(() => {
     if (isLoaded) {
@@ -20,6 +21,11 @@ export default function Home() {
       }
     }
   }, [profile, isLoaded, router]);
+
+  const handleUserLogin = () => {
+    setProfile('utilisateur');
+    router.push('/scan');
+  };
 
   if (!isLoaded) {
     return (
@@ -47,13 +53,21 @@ export default function Home() {
             TraceFacile
           </CardTitle>
           <CardDescription>
-            Suivi de traçabilité simple et efficace par QR code.
+            Sélectionnez votre profil pour commencer.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <p>Veuillez vous connecter pour continuer.</p>
-           <Button onClick={() => router.push('/login')} size="lg">
+           <Button onClick={() => router.push('/login')} size="lg" variant="outline">
              Connexion Administrateur
+           </Button>
+            <div className="flex items-center gap-4">
+                <Separator className="flex-1" />
+                <span className="text-xs text-muted-foreground">OU</span>
+                <Separator className="flex-1" />
+            </div>
+           <Button onClick={handleUserLogin} size="lg">
+             <User className="mr-2 h-5 w-5" />
+             Entrer comme Utilisateur
            </Button>
         </CardContent>
       </Card>
