@@ -154,16 +154,15 @@ export const useFirebaseApp = (): FirebaseApp => {
   return firebaseApp;
 };
 
-type MemoFirebase <T> = T & {__memo?: boolean};
-
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
-  const memoized = useMemo(factory, deps);
-  
-  if(typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as MemoFirebase<T>).__memo = true;
-  
-  return memoized;
+export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T {
+  // This hook is now a direct proxy to useMemo.
+  // The __memo property and runtime check have been removed to improve stability
+  // with Next.js Turbopack, which was causing compilation issues.
+  // It's still crucial to memoize Firestore queries/references passed to hooks like
+  // useCollection and useDoc, but this hook will no longer enforce it at runtime.
+  return useMemo(factory, deps);
 }
+
 
 /**
  * Hook specifically for accessing the authenticated user's state.
