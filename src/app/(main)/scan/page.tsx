@@ -103,12 +103,12 @@ export default function ScanPage() {
         setIsSaving(true);
         setShowScanner(false);
 
-        const finalQrData = `Produit: ${productQrData}; Trémie: ${scannedTremie}`;
+        const qrDataForHistory = `Produit: ${productQrData}, Trémie: ${scannedTremie}`;
         
-        getTraceabilityContext(finalQrData)
+        getTraceabilityContext(productQrData)
           .then(aiContext => {
             addScan({
-              qrData: finalQrData,
+              qrData: qrDataForHistory,
               sml: matchingAssignment.sml,
               tremie: matchingAssignment.tremie,
               aiContext: aiContext,
@@ -117,7 +117,7 @@ export default function ScanPage() {
           .catch(error => {
             console.error("AI analysis failed, adding scan without it.", error);
             addScan({
-              qrData: finalQrData,
+              qrData: qrDataForHistory,
               sml: matchingAssignment.sml,
               tremie: matchingAssignment.tremie,
             });
