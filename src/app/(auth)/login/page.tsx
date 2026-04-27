@@ -5,8 +5,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -23,8 +24,9 @@ const formSchema = z.object({
 export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
-  const { setProfile } = useUserProfile();
+  const { setProfile, logout } = useUserProfile();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -38,19 +40,33 @@ export default function LoginPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      setProfile('administrateur');
-      toast({
-        title: 'Connexion réussie',
-        description: 'Bienvenue, administrateur.',
-      });
-      router.push('/config');
-    } catch (error: any) {
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      const userDocRef = doc(firestore, "userProfiles", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
+        setProfile('administrateur');
+        toast({
+          title: "Connexion réussie",
+          description: "Bienvenue, administrateur.",
+        });
+        router.push("/config");
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Accès refusé",
+          description: "Vous n'avez pas les autorisations d'administrateur.",
+        });
+        logout();
+      }
+    } catch (error) {
       console.error("Login failed:", error);
       toast({
-        variant: 'destructive',
-        title: 'Échec de la connexion',
-        description: "L'adresse e-mail ou le mot de passe est incorrect.",
+        variant: "destructive",
+        title: "Échec de la connexion",
+        description: "Email ou mot de passe incorrect.",
       });
     } finally {
       setIsLoading(false);

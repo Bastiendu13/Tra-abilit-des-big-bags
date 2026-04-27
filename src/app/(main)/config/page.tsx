@@ -9,15 +9,13 @@ import { ChevronRight, Settings, PlusCircle, Trash2, Power, PowerOff, Shield, Al
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { useUser } from '@/firebase';
-import { useFirestoreUser } from '@/hooks/use-firestore-user';
+import { useUserProfile } from '@/hooks/use-user-profile';
 
 const SML_OPTIONS = Array.from({ length: 8 }, (_, i) => `SML${i + 1}`);
 const TREMIE_OPTIONS = Array.from({ length: 6 }, (_, i) => `Trémie ${i + 1}`);
 
 export default function ConfigPage() {
-  const { user, isUserLoading } = useUser();
-  const { firestoreUser, isLoading: isFirestoreUserLoading } = useFirestoreUser(user?.uid);
+  const { profile, isLoaded: isProfileLoaded } = useUserProfile();
   const { assignments, activeAssignments, addAssignment, removeAssignment, activateAssignment, deactivateAssignment, isLoaded: configLoaded } = useSessionConfig();
   const router = useRouter();
   const { toast } = useToast();
@@ -25,13 +23,13 @@ export default function ConfigPage() {
   const [selectedSml, setSelectedSml] = useState<string | null>(null);
   const [selectedTremie, setSelectedTremie] = useState<string | null>(null);
 
-  const isLoading = isUserLoading || isFirestoreUserLoading || !configLoaded;
-  const isAuthorized = !isLoading && user && firestoreUser?.role === 'admin';
+  const isLoading = !isProfileLoaded || !configLoaded;
+  const isAuthorized = profile === 'administrateur';
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (isProfileLoaded && !profile) {
       router.replace('/login');
-    } else if (!isLoading && user && firestoreUser?.role !== 'admin') {
+    } else if (isProfileLoaded && profile !== 'administrateur') {
       router.replace('/scan');
       toast({
         variant: "destructive",
@@ -39,7 +37,7 @@ export default function ConfigPage() {
         description: "Vous devez être administrateur pour accéder à cette page."
       });
     }
-  }, [isLoading, user, firestoreUser, router, toast]);
+  }, [isProfileLoaded, profile, router, toast]);
 
   const handleAddAssignment = () => {
     if (selectedSml && selectedTremie) {

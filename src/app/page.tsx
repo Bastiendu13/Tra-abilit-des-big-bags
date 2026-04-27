@@ -1,63 +1,62 @@
 "use client";
 
-import { Button } from '@/components/ui/button';
-import Image from 'next/image';
-import { User, Shield } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useUserProfile } from '@/hooks/use-user-profile';
-import { useSessionConfig } from '@/hooks/use-session-config';
-import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useUserProfile } from "@/hooks/use-user-profile";
+import { Loader2, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Home() {
-  const heroImage = PlaceHolderImages.find(p => p.id === 'hero-image');
-  const { setProfile } = useUserProfile();
-  const { activeAssignments, isLoaded } = useSessionConfig();
   const router = useRouter();
+  const { profile, isLoaded } = useUserProfile();
 
-  const handleOperatorProfileSelect = () => {
-    setProfile('utilisateur');
-    if (isLoaded && activeAssignments.length > 0) {
-      router.push('/scan');
-    } else {
-      router.push('/wait-for-config');
+  useEffect(() => {
+    if (isLoaded) {
+      if (profile === 'administrateur') {
+        router.replace('/config');
+      } else if (profile === 'utilisateur') {
+        router.replace('/scan');
+      }
     }
-  };
+  }, [profile, isLoaded, router]);
+
+  if (!isLoaded) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (profile) {
+    // Should be redirected, but show loading just in case.
+    return (
+       <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="relative w-full h-screen bg-background">
-      {heroImage && (
-         <Image
-            src={heroImage.imageUrl}
-            alt={heroImage.description}
-            fill
-            className="object-cover opacity-10 dark:opacity-20"
-            data-ai-hint={heroImage.imageHint}
-            priority
-        />
-      )}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
-        <div className="p-8 bg-background/80 backdrop-blur-sm rounded-xl border border-border/20 shadow-2xl">
-          <h1 className="text-5xl md:text-7xl font-bold text-primary mb-4 font-headline tracking-tight">
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <Card className="w-full max-w-md text-center">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-center gap-2 text-3xl">
+            <Package className="h-8 w-8 text-primary" />
             TraceFacile
-          </h1>
-          <p className="text-lg md:text-xl text-foreground/80 max-w-2xl mx-auto mb-8">
-            Suivez la traçabilité de vos produits en toute simplicité. Scannez, analysez et exportez les données en quelques clics.
-          </p>
-          <div className="space-y-4">
-            <p className="font-semibold">Veuillez sélectionner votre profil pour commencer :</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={() => router.push('/login')} size="lg" className="shadow-lg">
-                    <Shield className="mr-2 h-5 w-5" />
-                    Administrateur
-                </Button>
-                <Button onClick={handleOperatorProfileSelect} size="lg" variant="secondary" className="shadow-lg" disabled={!isLoaded}>
-                    <User className="mr-2 h-5 w-5" />
-                    Utilisateur
-                </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+          </CardTitle>
+          <CardDescription>
+            Suivi de traçabilité simple et efficace par QR code.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p>Veuillez vous connecter pour continuer.</p>
+           <Button onClick={() => router.push('/login')} size="lg">
+             Connexion Administrateur
+           </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

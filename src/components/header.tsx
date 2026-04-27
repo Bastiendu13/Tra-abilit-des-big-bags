@@ -57,7 +57,7 @@ export default function Header() {
                     {profile.charAt(0).toUpperCase() + profile.slice(1)}
                 </Badge>
             )}
-            {profile === 'administrateur' && (
+            {profile && (
               <Button variant="ghost" size="sm" onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Déconnexion
