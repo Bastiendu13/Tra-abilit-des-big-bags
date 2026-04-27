@@ -228,6 +228,7 @@ export default function ScanPage() {
 
       {isDialogOpen && matchingAssignment && (
         <ScanResultDialog
+          sml={matchingAssignment.sml}
           tremie={matchingAssignment.tremie}
           isOpen={isDialogOpen}
           onClose={handleDialogClose}
