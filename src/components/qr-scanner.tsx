@@ -16,8 +16,6 @@ export function QrScanner({ onScanSuccess, onScanFailure }: QrScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const qrcodeRegionId = "qr-code-reader";
 
-  // Use refs for the callbacks to prevent the effect from re-running on every parent render.
-  // This is crucial for stability and prevents race conditions.
   const onScanSuccessRef = useRef(onScanSuccess);
   onScanSuccessRef.current = onScanSuccess;
 
@@ -25,75 +23,79 @@ export function QrScanner({ onScanSuccess, onScanFailure }: QrScannerProps) {
   onScanFailureRef.current = onScanFailure;
 
   useEffect(() => {
-    // The effect now runs only once on mount, thanks to the empty dependency array.
-    const scanner = new Html5Qrcode(qrcodeRegionId, false);
-    scannerRef.current = scanner;
-
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-    const successCallback = (text: string, result: any) => {
-      if (!hasScannedRef.current) {
-        hasScannedRef.current = true;
-        // Call the latest callback via the ref.
-        onScanSuccessRef.current(text, result);
-      }
-    };
-
-    const failureCallback = (err: string) => {
-      if (onScanFailureRef.current) {
-        // Call the latest callback via the ref.
-        onScanFailureRef.current(err);
-      }
-    };
-
-    const startScanner = async () => {
-      // Ensure the DOM element is available before starting the scanner.
-      // This is generally true since useEffect runs after render, but this check adds robustness.
+    // Using a timeout to defer scanner initialization. This helps prevent race conditions
+    // where the library tries to access the DOM element before it's fully painted by the browser,
+    // which can lead to errors like "Cannot read properties of null (reading 'clientWidth')".
+    const initTimeout = setTimeout(() => {
+      // Ensure the DOM element exists before proceeding.
       if (!document.getElementById(qrcodeRegionId)) {
-        console.error("QR scanner DOM element not found.");
+        console.warn("QR scanner DOM element not found on init.");
         return;
       }
-      try {
-        const cameras = await Html5Qrcode.getCameras();
-        if (cameras && cameras.length > 0) {
-          const backCamera = cameras.find(c => c.label.toLowerCase().includes('back'));
-          const cameraId = backCamera ? backCamera.id : cameras[0].id;
+      
+      const scanner = new Html5Qrcode(qrcodeRegionId, false);
+      scannerRef.current = scanner;
 
-          if (scannerRef.current && scannerRef.current.getState() === Html5QrcodeScannerState.NOT_STARTED) {
-            await scannerRef.current.start(cameraId, config, successCallback, failureCallback);
-            setError(null);
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+      const successCallback = (text: string, result: any) => {
+        if (!hasScannedRef.current) {
+          hasScannedRef.current = true;
+          onScanSuccessRef.current(text, result);
+        }
+      };
+
+      const failureCallback = (err: string) => {
+        if (onScanFailureRef.current) {
+          onScanFailureRef.current(err);
+        }
+      };
+
+      const startScanner = async () => {
+        if (!document.getElementById(qrcodeRegionId)) {
+            return;
+        }
+
+        try {
+          const cameras = await Html5Qrcode.getCameras();
+          if (cameras && cameras.length > 0) {
+            const backCamera = cameras.find(c => c.label.toLowerCase().includes('back'));
+            const cameraId = backCamera ? backCamera.id : cameras[0].id;
+
+            if (scannerRef.current && scannerRef.current.getState() === Html5QrcodeScannerState.NOT_STARTED) {
+              await scannerRef.current.start(cameraId, config, successCallback, failureCallback);
+              setError(null);
+            }
+          } else {
+            setError("Aucune caméra trouvée sur cet appareil.");
           }
-        } else {
-          setError("Aucune caméra trouvée sur cet appareil.");
+        } catch (err: any) {
+          const errorMessage = (typeof err === 'string' ? err : err?.message) || '';
+          if (errorMessage.includes("Cannot transition to a new state")) {
+              console.warn("Caught a benign scanner transition error on remount.");
+          } else {
+              // The error is re-thrown by Next.js dev overlay, so no need to console.error here.
+              setError("Impossible d'accéder à la caméra. Veuillez vérifier les autorisations de votre navigateur.");
+          }
         }
-      } catch (err: any) {
-        // This specific error is a race condition from the library during fast remounts.
-        // We can safely ignore it as a new scanner instance will take over.
-        const errorMessage = (typeof err === 'string' ? err : err?.message) || '';
-        if (errorMessage.includes("Cannot transition to a new state")) {
-            console.warn("Caught a benign scanner transition error on remount.");
-        } else {
-            console.error("Erreur de démarrage de la caméra:", err);
-            setError("Impossible d'accéder à la caméra. Veuillez vérifier les autorisations de votre navigateur.");
-        }
-      }
-    };
+      };
 
-    startScanner();
+      startScanner();
+    }, 100); // 100ms delay is usually sufficient for the DOM to be ready.
 
     return () => {
-      // Cleanup function to stop the scanner when the component unmounts.
+      clearTimeout(initTimeout);
       if (scannerRef.current?.isScanning) {
         scannerRef.current.stop().catch(err => {
-          // It's common for stop() to throw an error if the scanner is already stopped or in a weird state.
-          // We can often safely ignore this during cleanup.
-          if (err.name !== 'NotScanningError') {
+          const errorMessage = (typeof err === 'string' ? err : err?.message) || '';
+          if (err.name !== 'NotScanningError' && !errorMessage.includes("Cannot transition to a new state")) {
             console.warn("Échec de l'arrêt du scanner lors du nettoyage:", err);
           }
         });
       }
     };
-  }, []); // <-- Empty dependency array is the key to the fix. It ensures the effect runs only once.
+  }, []); // Empty dependency array ensures this runs only once on mount.
+
 
   return (
     <div className={cn("w-full max-w-lg mx-auto aspect-square rounded-lg border-4 border-dashed border-primary/50 bg-secondary/50 overflow-hidden relative flex items-center justify-center")}>
