@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode, createElement } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
 
@@ -61,7 +61,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
   
   const value = { profile, setProfile, logout, isLoaded };
 
-  return createElement(UserProfileContext.Provider, { value }, children);
+  return React.createElement(UserProfileContext.Provider, { value: value }, children);
 }
 
 export function useUserProfile() {

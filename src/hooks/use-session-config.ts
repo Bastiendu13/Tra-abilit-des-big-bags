@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode, createElement } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 
 export interface Assignment {
   id: string;
@@ -114,7 +114,7 @@ export function SessionConfigProvider({ children }: { children: ReactNode }) {
       isLoaded 
   };
 
-  return createElement(SessionConfigContext.Provider, { value }, children);
+  return React.createElement(SessionConfigContext.Provider, { value: value }, children);
 }
 
 export function useSessionConfig() {
