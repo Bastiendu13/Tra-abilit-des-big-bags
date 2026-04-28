@@ -18,11 +18,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { useUserProfile } from '@/hooks/use-user-profile';
 
 export default function HistoryPage() {
   const { scans, clearHistory, isLoaded } = useScanHistory();
   const { toast } = useToast();
+  const { profile } = useUserProfile();
 
   const handleExport = () => {
     if (scans.length === 0) {
@@ -91,26 +93,28 @@ export default function HistoryPage() {
             <FileDown className="mr-2 h-4 w-4" />
             Exporter
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={scans.length === 0}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Vider
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Cette action est irréversible et supprimera définitivement tout votre historique de scans.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleClear}>Confirmer</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          {profile === 'administrateur' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={scans.length === 0}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Vider
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible et supprimera définitivement tout votre historique de scans.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClear}>Confirmer</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </div>
 
