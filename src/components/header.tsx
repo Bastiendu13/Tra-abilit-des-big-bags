@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { QrCode, History, Package, User, Shield, LogOut } from 'lucide-react';
+import { QrCode, History, Package, User, Shield, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Badge } from '@/components/ui/badge';
@@ -59,8 +59,8 @@ export default function Header() {
             )}
             {profile && (
               <Button variant="ghost" size="sm" onClick={logout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Déconnexion
+                <Menu className="mr-2 h-4 w-4" />
+                Menu
               </Button>
             )}
         </div>
