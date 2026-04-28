@@ -50,15 +50,17 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      // Only sign out from Firebase Auth if the user is an administrator,
-      // as the 'utilisateur' profile is not linked to a Firebase Auth session.
       if (profile === 'administrateur') {
+        // For admin, sign out of Firebase and switch directly to user profile
         const auth = getAuth();
         await signOut(auth);
+        setProfile('utilisateur'); // Set profile to 'user'
+        router.push('/scan');      // Go to scan page
+      } else {
+        // For 'utilisateur', just clear the profile and redirect to the main menu.
+        setProfile(null);
+        router.push('/');
       }
-      // For both users, clear the profile from local storage and redirect to the main menu.
-      setProfile(null);
-      router.push('/');
     } catch (error) {
       console.error("Error during logout: ", error);
     }
