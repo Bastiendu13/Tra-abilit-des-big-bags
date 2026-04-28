@@ -35,27 +35,31 @@ export default function HistoryPage() {
     }
     const flattenedData = scans.map(scan => {
       let productQr = '';
-      let hopperQr = '';
       const match = scan.qrData.match(/Produit: (.*), Trémie: (.*)/);
       if (match && match.length === 3) {
         productQr = match[1];
-        hopperQr = match[2];
       } else {
+        // Fallback for older data that might not have the "Produit: ..., Trémie: ..." format
         productQr = scan.qrData;
-        hopperQr = 'N/A';
       }
+      
+      const qrDataMap: { [key: string]: string } = productQr
+        .split(';')
+        .map(part => part.split('='))
+        .reduce((acc, [key, value]) => {
+          if (key && value) {
+            acc[key.trim().toUpperCase()] = value.trim();
+          }
+          return acc;
+        }, {} as { [key: string]: string });
 
       return {
-        id: scan.id,
-        timestamp: new Date(scan.timestamp).toISOString(),
-        sml: scan.sml,
-        tremie: scan.tremie,
-        'Code Produit': productQr,
-        'Code Trémie': hopperQr,
-        aiSummary: scan.aiContext?.summary.replace(/[\n,"]/g, ' ') || '',
-        aiCategories: scan.aiContext?.productCategories?.join('; ') || '',
-        aiOrigin: scan.aiContext?.originInformation?.join('; ') || '',
-        aiNextSteps: scan.aiContext?.nextSteps?.join('; ') || '',
+        'Produit': qrDataMap['SML'] || 'N/A',
+        'Fabricant': qrDataMap['FAB'] || 'N/A',
+        'Date de fabrication': qrDataMap['DATE'] || 'N/A',
+        'Numéro du lot': qrDataMap['LOT'] || 'N/A',
+        'Date de scan': new Date(scan.timestamp).toLocaleString('fr-FR'),
+        'Trémie': scan.tremie,
       };
     });
     exportToCsv(`tracabilite-big-bags-historique-${new Date().toISOString()}.csv`, flattenedData);
