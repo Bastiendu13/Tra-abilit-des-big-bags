@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import type { Scan } from '@/lib/types';
 
-const HISTORY_KEY = 'tracefacile-scan-history';
+const HISTORY_KEY = 'tracabilite-big-bags-scan-history';
 
 interface ScanHistoryContextType {
   scans: Scan[];

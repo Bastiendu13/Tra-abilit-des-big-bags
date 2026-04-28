@@ -50,7 +50,7 @@ export default function Home() {
         <CardHeader>
           <CardTitle className="flex items-center justify-center gap-2 text-3xl">
             <Package className="h-8 w-8 text-primary" />
-            TraceFacile
+            Traçabilité des big-bags
           </CardTitle>
           <CardDescription>
             Sélectionnez votre profil pour commencer.

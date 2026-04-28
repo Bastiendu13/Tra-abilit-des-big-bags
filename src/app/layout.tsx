@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'TraceFacile',
-  description: 'Suivi de traçabilité par QR code',
+  title: 'Traçabilité des big-bags',
+  description: 'Traçabilité des big-bags par QR code',
 };
 
 export default function RootLayout({

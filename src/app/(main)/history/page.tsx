@@ -58,7 +58,7 @@ export default function HistoryPage() {
         aiNextSteps: scan.aiContext?.nextSteps?.join('; ') || '',
       };
     });
-    exportToCsv(`tracefacile-historique-${new Date().toISOString()}.csv`, flattenedData);
+    exportToCsv(`tracabilite-big-bags-historique-${new Date().toISOString()}.csv`, flattenedData);
     toast({
       title: "Exportation réussie",
       description: "Votre historique a été téléchargé en CSV.",

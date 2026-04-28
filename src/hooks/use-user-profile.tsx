@@ -6,7 +6,7 @@ import { getAuth, signOut } from 'firebase/auth';
 
 export type UserProfile = 'administrateur' | 'utilisateur' | null;
 
-const PROFILE_KEY = 'tracefacile-user-profile';
+const PROFILE_KEY = 'tracabilite-big-bags-user-profile';
 
 interface UserProfileContextType {
   profile: UserProfile;

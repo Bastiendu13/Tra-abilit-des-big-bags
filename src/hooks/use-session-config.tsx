@@ -23,7 +23,7 @@ interface SessionConfigContextType {
   isLoaded: boolean;
 }
 
-const CONFIG_KEY = 'tracefacile-session-config';
+const CONFIG_KEY = 'tracabilite-big-bags-session-config';
 
 const SessionConfigContext = createContext<SessionConfigContextType | undefined>(undefined);
 

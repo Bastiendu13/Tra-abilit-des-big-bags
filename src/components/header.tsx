@@ -28,7 +28,7 @@ export default function Header() {
       <div className="container flex h-16 items-center">
         <Link href="/" className="mr-8 flex items-center space-x-2">
           <Package className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">TraceFacile</span>
+          <span className="font-bold text-lg">Traçabilité des big-bags</span>
         </Link>
         {profile && (
           <nav className="flex items-center space-x-6 text-sm font-medium">
