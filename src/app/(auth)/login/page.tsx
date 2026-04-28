@@ -6,15 +6,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
-import { Shield } from 'lucide-react';
+import { Shield, Menu } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
@@ -48,10 +49,6 @@ export default function LoginPage() {
 
       if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
         setProfile('administrateur');
-        toast({
-          title: "Connexion réussie",
-          description: "Bienvenue, administrateur.",
-        });
         router.push("/config");
       } else {
         toast({
@@ -59,6 +56,7 @@ export default function LoginPage() {
           title: "Accès refusé",
           description: "Vous n'avez pas les autorisations d'administrateur.",
         });
+        await signOut(auth);
         logout();
       }
     } catch (error) {
@@ -118,6 +116,13 @@ export default function LoginPage() {
             </form>
           </Form>
         </CardContent>
+        <CardFooter className="flex-col pt-4 gap-4">
+            <Separator />
+            <Button variant="link" className="w-full" onClick={() => router.push('/')}>
+                <Menu className="mr-2 h-4 w-4" />
+                Retour au menu
+            </Button>
+        </CardFooter>
       </Card>
     </div>
   );
