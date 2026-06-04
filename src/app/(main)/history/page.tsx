@@ -56,7 +56,7 @@ export default function HistoryPage() {
         }, {} as { [key: string]: string });
 
       return {
-        'Produit': qrDataMap['SML'] || 'N/A',
+        'Produit': qrDataMap['Slm'] || 'N/A',
         'Fabricant': qrDataMap['FAB'] || 'N/A',
         'Date de fabrication': qrDataMap['DATE'] || 'N/A',
         'Numéro du lot': qrDataMap['LOT'] || 'N/A',
@@ -137,7 +137,7 @@ export default function HistoryPage() {
                     <CardTitle className="break-all text-lg">{scan.qrData}</CardTitle>
                     <Badge variant="outline" className="flex-shrink-0 ml-4">
                         <Server className="mr-2 h-4 w-4"/>
-                        {scan.sml} / {scan.tremie}
+                        {scan.Slm} / {scan.tremie}
                     </Badge>
                 </div>
                 <CardDescription>

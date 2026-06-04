@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/hooks/use-user-profile';
 
-const SML_OPTIONS = Array.from({ length: 8 }, (_, i) => `SML${i + 1}`);
+const SLM_OPTIONS = Array.from({ length: 8 }, (_, i) => `SLM${i + 1}`);
 const TREMIE_OPTIONS = Array.from({ length: 6 }, (_, i) => `Trémie ${i + 1}`);
 
 export default function ConfigPage() {
@@ -20,7 +20,7 @@ export default function ConfigPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [selectedSml, setSelectedSml] = useState<string | null>(null);
+  const [selectedSlm, setSelectedSlm] = useState<string | null>(null);
   const [selectedTremie, setSelectedTremie] = useState<string | null>(null);
 
   const isLoading = !isProfileLoaded || !configLoaded;
@@ -40,13 +40,13 @@ export default function ConfigPage() {
   }, [isProfileLoaded, profile, router, toast]);
 
   const handleAddAssignment = () => {
-    if (selectedSml && selectedTremie) {
-        addAssignment(selectedSml, selectedTremie);
+    if (selectedSlm && selectedTremie) {
+        addAssignment(selectedSlm, selectedTremie);
         toast({
           title: "Affectation ajoutée",
-          description: `${selectedSml} / ${selectedTremie} a été ajouté à la liste.`,
+          description: `${selectedSlm} / ${selectedTremie} a été ajouté à la liste.`,
         });
-        setSelectedSml(null);
+        setSelectedSlm(null);
         setSelectedTremie(null);
     }
   };
@@ -56,7 +56,7 @@ export default function ConfigPage() {
     const assignment = assignments.find(a => a.id === assignmentId);
     toast({
         title: "Session activée",
-        description: `La session de scan est maintenant active pour ${assignment?.sml} / ${assignment?.tremie}.`,
+        description: `La session de scan est maintenant active pour ${assignment?.Slm} / ${assignment?.tremie}.`,
     });
   };
 
@@ -65,7 +65,7 @@ export default function ConfigPage() {
     const assignment = assignments.find(a => a.id === assignmentId);
     toast({
         title: "Session désactivée",
-        description: `La session pour ${assignment?.sml} / ${assignment?.tremie} est inactive.`,
+        description: `La session pour ${assignment?.Slm} / ${assignment?.tremie} est inactive.`,
     });
   };
 
@@ -111,7 +111,7 @@ export default function ConfigPage() {
                 Gestion des Affectations
               </h1>
               <p className="text-muted-foreground">
-                Créez des affectations SML/Trémie et activez-les pour la session de scan.
+                Créez des affectations Slm/Trémie et activez-les pour la session de scan.
               </p>
             </div>
         </div>
@@ -125,20 +125,20 @@ export default function ConfigPage() {
             </CardHeader>
             <CardContent className="space-y-6">
                 <div>
-                    <h3 className="font-semibold mb-2 text-muted-foreground">Étape 1: Sélectionner le SML</h3>
+                    <h3 className="font-semibold mb-2 text-muted-foreground">Étape 1: Sélectionner le Slm</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {SML_OPTIONS.map(sml => (
+                        {Slm_OPTIONS.map(Slm => (
                         <Button
-                            key={sml}
-                            variant={selectedSml === sml ? 'default' : 'outline'}
-                            onClick={() => setSelectedSml(sml)}
+                            key={Slm}
+                            variant={selectedSlm === Slm ? 'default' : 'outline'}
+                            onClick={() => setSelectedSlm(Slm)}
                         >
-                            {sml}
+                            {Slm}
                         </Button>
                         ))}
                     </div>
                 </div>
-                {selectedSml && (
+                {selectedSlm && (
                     <div className="animate-in fade-in duration-500">
                         <h3 className="font-semibold mb-2 text-muted-foreground">Étape 2: Sélectionner la Trémie</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -155,11 +155,11 @@ export default function ConfigPage() {
                     </div>
                 )}
             </CardContent>
-            {selectedSml && selectedTremie && (
+            {selectedSlm && selectedTremie && (
                 <CardFooter>
                     <Button onClick={handleAddAssignment} className="w-full">
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Ajouter l'affectation: {selectedSml} / {selectedTremie}
+                        Ajouter l'affectation: {selectedSlm} / {selectedTremie}
                     </Button>
                 </CardFooter>
             )}
@@ -170,7 +170,7 @@ export default function ConfigPage() {
                 <CardTitle>Liste des Affectations</CardTitle>
                 <CardDescription>
                      {activeAssignments.length > 0 
-                        ? <>{activeAssignments.length} session{activeAssignments.length > 1 ? 's' : ''} active{activeAssignments.length > 1 ? 's' : ''} : <strong className="text-primary">{activeAssignments.map(a => `${a.sml} / ${a.tremie}`).join(', ')}</strong></> 
+                        ? <>{activeAssignments.length} session{activeAssignments.length > 1 ? 's' : ''} active{activeAssignments.length > 1 ? 's' : ''} : <strong className="text-primary">{activeAssignments.map(a => `${a.Slm} / ${a.tremie}`).join(', ')}</strong></> 
                         : "Aucune session n'est active. Les utilisateurs ne peuvent pas scanner."
                     }
                 </CardDescription>
@@ -183,7 +183,7 @@ export default function ConfigPage() {
                             return (
                                 <Card key={assignment.id} className={cn("flex items-center justify-between p-4", isActive && "bg-primary/10 border-primary")}>
                                     <p className="font-semibold text-lg">
-                                        {assignment.sml} <ChevronRight className="inline-block h-5 w-5 mx-1 text-muted-foreground" /> {assignment.tremie}
+                                        {assignment.Slm} <ChevronRight className="inline-block h-5 w-5 mx-1 text-muted-foreground" /> {assignment.tremie}
                                     </p>
                                     <div className="flex items-center gap-2">
                                         {isActive ? (

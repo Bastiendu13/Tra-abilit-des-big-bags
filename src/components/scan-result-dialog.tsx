@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Package, Server, ChevronRight } from 'lucide-react';
 
 interface ScanResultDialogProps {
-  sml: string;
+  Slm: string;
   tremie: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function ScanResultDialog({ sml, tremie, isOpen, onClose }: ScanResultDialogProps) {
+export function ScanResultDialog({ Slm, tremie, isOpen, onClose }: ScanResultDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -33,7 +33,7 @@ export function ScanResultDialog({ sml, tremie, isOpen, onClose }: ScanResultDia
             <div className="flex items-center justify-center gap-4 rounded-lg border bg-secondary/50 p-4 text-lg">
                 <div className="flex items-center gap-2">
                     <Package className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-bold">{sml}</span>
+                    <span className="font-bold">{Slm}</span>
                 </div>
                 <ChevronRight className="h-6 w-6 text-muted-foreground" />
                 <div className="flex items-center gap-2">

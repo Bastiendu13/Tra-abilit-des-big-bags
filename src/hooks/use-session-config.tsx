@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, createContext, useContext, Rea
 
 export interface Assignment {
   id: string;
-  sml: string;
+  Slm: string;
   tremie: string;
 }
 
@@ -16,7 +16,7 @@ export interface SessionConfig {
 interface SessionConfigContextType {
   assignments: Assignment[];
   activeAssignments: Assignment[];
-  addAssignment: (sml: string, tremie: string) => void;
+  addAssignment: (Slm: string, tremie: string) => void;
   removeAssignment: (assignmentId: string) => void;
   activateAssignment: (assignmentId: string) => void;
   deactivateAssignment: (assignmentId: string) => void;
@@ -64,9 +64,9 @@ export function SessionConfigProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  const addAssignment = useCallback((sml: string, tremie: string) => {
+  const addAssignment = useCallback((Slm: string, tremie: string) => {
     setConfig(prevConfig => {
-      const newAssignment: Assignment = { id: new Date().getTime().toString(), sml, tremie };
+      const newAssignment: Assignment = { id: new Date().getTime().toString(), Slm, tremie };
       const newConfig = { ...prevConfig, assignments: [...prevConfig.assignments, newAssignment] };
       persistConfig(newConfig);
       return newConfig;
