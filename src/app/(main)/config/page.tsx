@@ -1,17 +1,17 @@
 "use client";
 
-import { db } from '@/src/lib/firebase';
+import { db } from '../../../lib/firebase';
 import { collection, addDoc, onSnapshot, query, deleteDoc, doc } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSessionConfig } from '@/src/hooks/useSessionConfig';
-import { Button } from '@/src/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/src/components/ui/card';
+import { useSessionConfig } from '../../../hooks/use-session-config';
+import { Button } from '../../../components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../../components/ui/card';
 import { ChevronRight, Settings, PlusCircle, Trash2, Power, PowerOff, Shield, AlertTriangle } from 'lucide-react';
-import { Skeleton } from '@/src/components/ui/skeleton';
-import { useToast } from '@/src/hooks/use-toast';
-import { cn } from '@/src/lib/utils';
-import { useUserProfile } from '@/src/hooks/use-user-profile';
+import { Skeleton } from '../../../components/ui/skeleton';
+import { useToast } from '../../../hooks/use-toast';
+import { cn } from '../../../lib/utils';
+import { useUserProfile } from '../../../hooks/use-user-profile';
 
 const SLM_OPTIONS = Array.from({ length: 8 }, (_, i) => `SLM${i + 1}`);
 const TREMIE_OPTIONS = Array.from({ length: 6 }, (_, i) => `Trémie ${i + 1}`);
@@ -49,13 +49,13 @@ export default function ConfigPage() {
     }
   }, [isProfileLoaded, profile, router, toast]);
 
-  // 🛠️ Étape 2 : Enregistrement direct via le Hook Cloud avec la bonne casse
+  // 🛠️ Étape 2 : Enregistrement direct via le Hook Cloud
   const handleSelectTremie = async (tremie: string) => {
     if (!selectedSLM) return;
 
     try {
       await addAssignment({
-        slm: selectedSLM,     // Clé attendue par ton hook/Firebase
+        slm: selectedSLM,
         tremie: tremie
       });
 
@@ -176,7 +176,6 @@ export default function ConfigPage() {
             <div className="space-y-3">
               {assignments.map(assignment => {
                 const isActive = activeAssignments.some(a => a.id === assignment.id);
-                // Sécurité pour tolérer la casse de la base de données (SLM ou slm)
                 const displaySLM = assignment.SLM || assignment.slm;
                 
                 return (

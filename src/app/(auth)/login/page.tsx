@@ -1,21 +1,23 @@
 "use client";
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+// 🔐 Chemins relatifs directs pour remonter les dossiers jusqu'à Firebase
+import { db } from '../../../lib/firebase'; 
+import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useRouter } from 'next/navigation';
-import { useAuth, useFirestore } from '@/firebase';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { useUserProfile } from '@/hooks/use-user-profile';
+// 📂 Chemins relatifs pour les composants UI
+import { Button } from '../../../components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../components/ui/form';
+import { Input } from '../../../components/ui/input';
+import { useToast } from '../../../hooks/use-toast';
+import { useUserProfile } from '../../../hooks/use-user-profile';
 import { Shield, Menu } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { Separator } from '../../../components/ui/separator';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
@@ -24,8 +26,8 @@ const formSchema = z.object({
 
 export default function LoginPage() {
   const router = useRouter();
-  const auth = useAuth();
-  const firestore = useFirestore();
+  const auth = getAuth();
+  const firestore = getFirestore();
   const { toast } = useToast();
   const { setProfile, logout } = useUserProfile();
   const [isLoading, setIsLoading] = useState(false);
