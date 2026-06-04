@@ -4,7 +4,7 @@ export type Scan = {
   id: string;
   qrData: string;
   timestamp: number;
-  Slm: string;
+  SLM: string;
   tremie: string;
   aiContext?: AISuggestTraceabilityContextOutput;
 };

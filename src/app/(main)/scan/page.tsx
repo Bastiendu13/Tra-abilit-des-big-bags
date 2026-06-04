@@ -55,7 +55,7 @@ export default function ScanPage() {
 
   const handleScanSuccess = (decodedText: string) => {
     if (scanStep === 'product') {
-      // Logic to extract Slm from 'key=value;' string
+      // Logic to extract SLM from 'key=value;' string
       const qrData: { [key: string]: string } = decodedText
         .split(';')
         .map(part => part.split('='))
@@ -66,19 +66,19 @@ export default function ScanPage() {
           return acc;
         }, {} as { [key: string]: string });
 
-      const extractedSlm = qrData['Slm'];
+      const extractedSLM = qrData['SLM'];
 
-      if (!extractedSlm) {
+      if (!extractedSLM) {
         setErrorDialog({
           title: "Format de QR code invalide",
-          description: "Le code QR du produit ne contient pas de clé 'Slm' au format 'clé=valeur;'.",
+          description: "Le code QR du produit ne contient pas de clé 'SLM' au format 'clé=valeur;'.",
         });
         setScannerKey(Date.now());
         return;
       }
       
       const assignment = activeAssignments.find(
-        a => a.Slm.toUpperCase() === extractedSlm.toUpperCase()
+        a => a.SLM.toUpperCase() === extractedSLM.toUpperCase()
       );
 
       if (assignment) {
@@ -88,8 +88,8 @@ export default function ScanPage() {
         setShowHopperInfoDialog(true); // Show info dialog
       } else {
         setErrorDialog({
-          title: "Slm non configurée",
-          description: `La Slm "${extractedSlm}" scannée ne correspond à aucune session active.`,
+          title: "SLM non configurée",
+          description: `La SLM "${extractedSLM}" scannée ne correspond à aucune session active.`,
         });
         setScannerKey(Date.now());
       }
@@ -109,7 +109,7 @@ export default function ScanPage() {
           .then(aiContext => {
             addScan({
               qrData: qrDataForHistory,
-              Slm: matchingAssignment.Slm,
+              SLM: matchingAssignment.SLM,
               tremie: matchingAssignment.tremie,
               aiContext: aiContext,
             });
@@ -118,7 +118,7 @@ export default function ScanPage() {
             console.error("AI analysis failed, adding scan without it.", error);
             addScan({
               qrData: qrDataForHistory,
-              Slm: matchingAssignment.Slm,
+              SLM: matchingAssignment.SLM,
               tremie: matchingAssignment.tremie,
             });
           })
@@ -160,7 +160,7 @@ export default function ScanPage() {
     );
   }
   
-  const activeAssignmentsText = activeAssignments.map(a => `${a.Slm} / ${a.tremie}`).join(' | ');
+  const activeAssignmentsText = activeAssignments.map(a => `${a.SLM} / ${a.tremie}`).join(' | ');
 
   return (
     <div className="flex flex-col items-center gap-8 w-full max-w-2xl mx-auto">
@@ -228,7 +228,7 @@ export default function ScanPage() {
 
       {isDialogOpen && matchingAssignment && (
         <ScanResultDialog
-          Slm={matchingAssignment.Slm}
+          SLM={matchingAssignment.SLM}
           tremie={matchingAssignment.tremie}
           isOpen={isDialogOpen}
           onClose={handleDialogClose}

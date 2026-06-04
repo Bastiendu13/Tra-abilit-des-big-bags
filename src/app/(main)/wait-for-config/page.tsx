@@ -33,7 +33,7 @@ export default function WaitForConfigPage() {
                     <div className="text-center text-muted-foreground p-8 border-2 border-dashed rounded-lg">
                         <Settings className="mx-auto h-12 w-12" />
                         <p className="mt-4">
-                           Veuillez demander à un administrateur d'activer une affectation Slm/trémie pour pouvoir commencer à scanner.
+                           Veuillez demander à un administrateur d'activer une affectation SLM/trémie pour pouvoir commencer à scanner.
                         </p>
                         <p className="mt-2 text-sm">
                             Cette page se rafraîchira automatiquement.
