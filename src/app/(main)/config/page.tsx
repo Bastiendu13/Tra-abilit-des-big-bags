@@ -127,7 +127,7 @@ export default function ConfigPage() {
                 <div>
                     <h3 className="font-semibold mb-2 text-muted-foreground">Étape 1: Sélectionner le Slm</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {Slm_OPTIONS.map(Slm => (
+                        {SLM_OPTIONS.map(Slm => (
                         <Button
                             key={Slm}
                             variant={selectedSlm === Slm ? 'default' : 'outline'}
